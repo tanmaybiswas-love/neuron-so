@@ -451,7 +451,7 @@
                     modelSelect.innerHTML = '';
                     const groups = {};
                     models.forEach(m => {
-                        const id = m.id || m.model || m.name;
+                        const id = typeof m === 'string' ? m : (m.id || m.model || m.name);
                         if (!id) return;
                         let provider = 'অন্যান্য';
                         if (id.includes('gpt')) provider = 'GPT';
@@ -491,13 +491,9 @@
         }
         function fallbackModels() {
             modelSelect.innerHTML = `
-                <optgroup label="GPT"><option value="gpt-4o">GPT-4o</option><option value="gpt-4-turbo">GPT-4 Turbo</option></optgroup>
-                <optgroup label="Claude"><option value="claude-3-opus">Claude 3 Opus</option><option value="claude-3-sonnet">Claude 3 Sonnet</option></optgroup>
-                <optgroup label="Gemini"><option value="gemini-1.5-pro">Gemini 1.5 Pro</option></optgroup>
-                <optgroup label="DeepSeek"><option value="deepseek/deepseek-v4">DeepSeek v4</option><option value="deepseek/deepseek-v3.2">DeepSeek v3.2</option></optgroup>
-                <optgroup label="Qwen"><option value="qwen/qwen-2.5-72b">Qwen 2.5 72B</option></optgroup>
-                <optgroup label="Llama"><option value="llama/llama-3.1-405b">Llama 3.1 405B</option></optgroup>
-                <optgroup label="Grok"><option value="grok/grok-1">Grok-1</option></optgroup>
+                <optgroup label="GPT"><option value="gpt-4o">GPT-4o</option><option value="gpt-4o-mini">GPT-4o Mini</option></optgroup>
+                <optgroup label="Claude"><option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option></optgroup>
+                <optgroup label="DeepSeek"><option value="deepseek-chat">DeepSeek Chat</option><option value="deepseek-reasoner">DeepSeek Reasoner</option></optgroup>
             `;
         }
         loadModels();
@@ -672,15 +668,12 @@
             return context;
         }
 
-        // ---------- CHECK STREAM SUPPORT ----------
         function modelSupportsStream(modelId) {
             if (!modelId) return true;
-            const noStream = ['deepseek/deepseek-v3.2', 'deepseek/deepseek-r1-0528', 'grok/grok-1', 'grok/grok-2'];
+            const noStream = ['deepseek/deepseek-v3.2', 'deepseek/deepseek-r1-0528', 'grok/grok-1', 'grok/grok-2', 'deepseek-reasoner'];
             return !noStream.some(m => modelId.includes(m));
         }
 
-        // ---------- CORRECTED: CALL PUTER.AI.CHAT ----------
-        // সঠিক ফরম্যাট: puter.ai.chat(messagesArray, { model, stream })
         async function callPuterChat(messages, options) {
             return await puter.ai.chat(messages, options);
         }
@@ -711,28 +704,34 @@
             prompt.value = '';
             if (!fileInput.files.length) fileName.textContent = 'কোন ফাইল নেই';
 
-            let agiContext = '';
-            let systemPrompt = 'You are a helpful assistant.';
+            let systemPrompt = 'You are a helpful AI assistant.';
             if (currentMode === 'advance') {
-                agiContext = buildAdvanceContext(userText, fileObj);
-                systemPrompt = `You are Neuron OS with memory & reasoning. Context: ${agiContext}. 
-                Provide structured, layered answers. For code, give step-by-step plans. Use markdown.`;
+                const agiContext = buildAdvanceContext(userText, fileObj);
+                systemPrompt = `You are Neuron OS with memory & reasoning. Context: ${agiContext}. Provide structured, layered answers. For code, give step-by-step plans. Use markdown formatting.`;
             }
 
-            const recentMem = memoryStore.slice(-8).map(m => `${m.role}: ${(m.content||'').substring(0,250)}`).join('\n');
-            const fullPrompt = `[মেমরি]\n${recentMem}\n\n${currentMode === 'advance' ? '[AGI প্ল্যান] '+agiContext : ''}\n\nব্যবহারকারী: ${userText}\n\nউত্তর:`;
-
             const messages = [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: fullPrompt }
+                { role: 'system', content: systemPrompt }
             ];
+
+            // Add last 6 messages to chat structure
+            const recentHistory = memoryStore.slice(-7, -1);
+            recentHistory.forEach(m => {
+                if (m.role === 'user' || m.role === 'agi') {
+                    messages.push({
+                        role: m.role === 'agi' ? 'assistant' : 'user',
+                        content: m.content || ''
+                    });
+                }
+            });
+
+            messages.push({ role: 'user', content: userText });
 
             showTyping();
 
             try {
                 const streamSupport = modelSupportsStream(model);
                 if (streamSupport) {
-                    // STREAMING: messages as first arg, options as second
                     const response = await callPuterChat(messages, { model, stream: true });
 
                     hideTyping();
@@ -754,49 +753,38 @@
                     chat.appendChild(msgDiv);
 
                     let fullReply = '';
-                    let firstChunk = true;
                     for await (const chunk of response) {
-                        const content = chunk?.message?.content || chunk?.content || chunk?.text || '';
+                        const content = chunk?.text || chunk?.message?.content || chunk?.content || (typeof chunk === 'string' ? chunk : '');
                         if (content) {
                             fullReply += content;
-                            if (firstChunk) {
-                                bubble.innerHTML = renderMarkdown(fullReply);
-                                firstChunk = false;
-                            } else {
-                                bubble.innerHTML = renderMarkdown(fullReply);
-                            }
+                            bubble.innerHTML = renderMarkdown(fullReply);
                             chat.scrollTop = chat.scrollHeight;
                         }
                     }
                     if (!fullReply) {
-                        // fallback non-stream
                         const fallback = await callPuterChat(messages, { model, stream: false });
-                        fullReply = fallback?.message?.content || fallback?.content || 'no response';
+                        fullReply = fallback?.message?.content || fallback?.text || 'কোন উত্তর পাওয়া যায়নি।';
                         bubble.innerHTML = renderMarkdown(fullReply);
                     }
-                    // save memory
+
                     const entry = { role: 'agi', content: fullReply, model, timestamp: new Date().toISOString(), file: null, mode: currentMode };
                     memoryStore.push(entry);
                     if (memoryStore.length > MAX_MEMORY) memoryStore.shift();
                     updateMemCounter();
 
                 } else {
-                    // NON-STREAM: messages as first arg, options as second
                     const response = await callPuterChat(messages, { model, stream: false });
                     hideTyping();
-                    let reply = response?.message?.content || response?.content || 'no response';
-                    if (typeof reply === 'object') reply = JSON.stringify(reply);
+                    let reply = response?.message?.content || response?.text || response?.toString() || 'কোন উত্তর পাওয়া যায়নি।';
                     appendMessage('agi', reply, model);
                 }
 
             } catch(err) {
                 hideTyping();
                 console.error('Puter error:', err);
-                // Fallback non-stream with correct format
                 try {
                     const response = await callPuterChat(messages, { model, stream: false });
-                    let reply = response?.message?.content || response?.content || 'error fallback';
-                    if (typeof reply === 'object') reply = JSON.stringify(reply);
+                    let reply = response?.message?.content || response?.text || response?.toString() || 'কোন উত্তর পাওয়া যায়নি।';
                     appendMessage('agi', reply, model);
                 } catch(e2) {
                     console.error('Fallback error:', e2);
@@ -857,7 +845,7 @@
 
         updateMemCounter();
         updateModeUI();
-        console.log('Neuron OS with fixed puter.ai.chat() format.');
+        console.log('Neuron OS with optimized Puter API integration.');
     })();
 </script>
 </body>
