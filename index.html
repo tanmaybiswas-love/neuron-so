@@ -38,8 +38,8 @@
         .bubble p { margin:3px 0; }
         .msg.user .bubble { background:#1f5a82; border-color:#3d89c0; color:#fff; border-bottom-right-radius:4px; }
         .msg.agi .bubble { background:#17222e; border-bottom-left-radius:4px; border-color:#334a5e; }
-        .msg-meta { display:flex; justify-content:space-between; font-size:0.55rem; color:#6e8aa8; padding:2px 8px 0; }
-        .msg-meta .tag { background:#1d2b3b; padding:0 10px; border-radius:30px; color:#b2cfe9; }
+        .msg-meta { display:flex; justify-content:space-between; font-size:0.5rem; color:#6e8aa8; padding:2px 8px 0; }
+        .msg-meta .tag { background:#1d2b3b; padding:0 10px; border-radius:30px; color:#b2cfe9; font-size:0.5rem; }
         .input-area { padding:6px 12px 12px; background:#121c26; border-top:1px solid #25323f; display:flex; flex-direction:column; gap:4px; }
         .input-row { display:flex; gap:6px; align-items:flex-end; }
         .input-row textarea { flex:1; background:#1a2633; border:1px solid #2e3f50; border-radius:24px; padding:10px 16px; color:#e2eefb; font-size:0.85rem; resize:none; outline:none; min-height:42px; max-height:100px; line-height:1.4; }
@@ -83,7 +83,7 @@
         </div>
         <div class="model-selector">
             <i class="fas fa-microchip"></i>
-            <select id="modelSelect"><option value="">লোড হচ্ছে...</option></select>
+            <select id="modelSelect"></select>
         </div>
     </div>
     <div class="memory-stats">
@@ -109,10 +109,9 @@
             <div class="api-selector" id="apiSelector">
                 <button class="active" data-api="ppg">PPG</button>
                 <button data-api="ppo">PPO</button>
-                <button data-api="ppl">PPL</button>
             </div>
-            <span class="api-label" id="apiLabel"><i class="fas fa-key"></i> PPG · Google</span>
-            <span id="modelCount" style="font-size:0.55rem;color:#5f7f9c;">Model: 20+</span>
+            <span class="api-label" id="apiLabel"><i class="fas fa-key"></i> PPG</span>
+            <span id="modelCount" style="font-size:0.55rem;color:#5f7f9c;"></span>
         </div>
         <div class="security-notice"><i class="fas fa-shield-alt"></i> এনক্রিপ্টেড</div>
     </div>
@@ -121,11 +120,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-    // ---------- API Keys (এনক্রিপ্টেড) ----------
+    // ---------- API Keys ----------
     const ENCRYPTED_KEYS = {
         openrouter: 'c2stb3ItdjEtOGRiZWYxYmRjYjJmOTA4N2IzMDQ1NjY2ZTg1YjI5MmY4MDllZGUwNDBiNGMyYTNiMTkxNGIwNDNlYThhMTA3ZQ==',
-        gemini: 'QVEuQWI4Uk42S0JwWWVYeFBRU25hUnJTZERSa2RvSFlqRGNpNkthRVZBR1ZIQ3ZFV18wWVE=',
-        glm: 'NDY2OTRkYmM2NWFiNDdjNmIzYWFjOTRhYThlNDEwMi5KM3pwQXRiZ29KNFJIM3BI'
+        gemini: 'QVEuQWI4Uk42S0JwWWVYeFBRU25hUnJTZERSa2RvSFlqRGNpNkthRVZBR1ZIQ3ZFV18wWVE='
     };
     
     function decodeKey(encoded) {
@@ -134,13 +132,11 @@
     
     const OPENROUTER_KEY = decodeKey(ENCRYPTED_KEYS.openrouter);
     const GEMINI_KEY = decodeKey(ENCRYPTED_KEYS.gemini);
-    const GLM_KEY = decodeKey(ENCRYPTED_KEYS.glm);
     
-    // ---------- API PROVIDER SETTINGS (শুধু ফ্রি মডেল) ----------
+    // ---------- API PROVIDERS ----------
     const API_PROVIDERS = {
         'ppg': {
-            label: 'PPG · Google',
-            icon: 'google',
+            label: 'PPG',
             apiKey: GEMINI_KEY,
             baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
             models: [
@@ -149,63 +145,36 @@
             fallbackModels: ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemma-4-31b-it']
         },
         'ppo': {
-            label: 'PPO · OpenRouter',
-            icon: 'openrouter',
+            label: 'PPO',
             apiKey: OPENROUTER_KEY,
             baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-            // শুধু ফ্রি মডেল - Claude/GPT বাদ
             models: [
                 'deepseek/deepseek-r1:free',
-                'deepseek/deepseek-v3.2:free',
                 'meta-llama/llama-3.3-70b-instruct:free',
-                'google/gemma-4-31b-it:free',
+                'mistralai/mistral-7b-instruct:free',
                 'qwen/qwen-2.5-coder-32b-instruct:free',
-                'qwen/qwen-2.5-72b:free',
-                'nvidia/nemotron-3-super-120b-a12b:free',
-                'xiaomi/mimo-v2-flash:free',
-                'qwen/qwen3.6-plus-preview:free',
-                'mistral/mistral-large:free'
+                'openrouter/free'
             ],
             fallbackModels: [
                 'deepseek/deepseek-r1:free',
                 'meta-llama/llama-3.3-70b-instruct:free',
-                'qwen/qwen-2.5-coder-32b-instruct:free'
+                'qwen/qwen-2.5-coder-32b-instruct:free',
+                'openrouter/free'
             ]
-        },
-        'ppl': {
-            label: 'PPL · GLM',
-            icon: 'glm',
-            apiKey: GLM_KEY,
-            baseUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-            models: ['glm-5.2', 'glm-4', 'glm-4-flash', 'glm-4v-plus', 'glm-4-air'],
-            fallbackModels: ['glm-4', 'glm-4-flash', 'glm-4-air']
         }
     };
     
-    // ---------- MODEL LIST (শুধু ফ্রি) ----------
+    // ---------- MODEL LIST ----------
     const MODEL_LIST = {
-        // PPG (Google)
         'gemini-3.5-flash': 'Gemini 3.5 Flash',
         'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
         'gemma-4-31b-it': 'Gemma 4 31B IT',
         'gemini-3.6-flash': 'Gemini 3.6 Flash',
-        // PPO (OpenRouter - শুধু ফ্রি)
-        'deepseek/deepseek-r1:free': 'DeepSeek R1 (Free)',
-        'deepseek/deepseek-v3.2:free': 'DeepSeek v3.2 (Free)',
-        'meta-llama/llama-3.3-70b-instruct:free': 'Llama 3.3 70B (Free)',
-        'google/gemma-4-31b-it:free': 'Gemma 4 31B IT (Free)',
-        'qwen/qwen-2.5-coder-32b-instruct:free': 'Qwen 2.5 Coder (Free)',
-        'qwen/qwen-2.5-72b:free': 'Qwen 2.5 72B (Free)',
-        'nvidia/nemotron-3-super-120b-a12b:free': 'NVIDIA Nemotron 3 (Free)',
-        'xiaomi/mimo-v2-flash:free': 'Xiaomi MiMo V2 (Free)',
-        'qwen/qwen3.6-plus-preview:free': 'Qwen 3.6 Plus (Free)',
-        'mistral/mistral-large:free': 'Mistral Large (Free)',
-        // PPL (GLM)
-        'glm-5.2': 'GLM 5.2',
-        'glm-4': 'GLM-4',
-        'glm-4-flash': 'GLM-4 Flash',
-        'glm-4v-plus': 'GLM-4V Plus',
-        'glm-4-air': 'GLM-4 Air'
+        'deepseek/deepseek-r1:free': 'DeepSeek R1',
+        'meta-llama/llama-3.3-70b-instruct:free': 'Llama 3.3 70B',
+        'mistralai/mistral-7b-instruct:free': 'Mistral 7B',
+        'qwen/qwen-2.5-coder-32b-instruct:free': 'Qwen 2.5 Coder',
+        'openrouter/free': 'Auto-Router'
     };
     
     // ---------- DOM REFS ----------
@@ -227,6 +196,7 @@
     // ---------- STATE ----------
     let currentMode = 'simple';
     let currentAPI = 'ppg';
+    let isProcessing = false;
     
     try {
         const m = localStorage.getItem('neuron_agi_mode');
@@ -234,13 +204,13 @@
     } catch(e) {}
     try {
         const a = localStorage.getItem('neuron_agi_api');
-        if (a === 'ppg' || a === 'ppo' || a === 'ppl') currentAPI = a;
+        if (a === 'ppg' || a === 'ppo') currentAPI = a;
     } catch(e) {}
     
     // ---------- MEMORY ----------
     let memoryStore = [];
     try {
-        const stored = localStorage.getItem('neuron_agi_memory_v7');
+        const stored = localStorage.getItem('neuron_agi_memory_v8');
         if (stored) memoryStore = JSON.parse(stored);
         if (!Array.isArray(memoryStore)) memoryStore = [];
     } catch(e) { memoryStore = []; }
@@ -251,43 +221,13 @@
         if (!provider) return;
         
         modelSelect.innerHTML = '';
-        const groups = {};
         
         provider.models.forEach(modelId => {
             const displayName = MODEL_LIST[modelId] || modelId;
-            let providerName = api.toUpperCase();
-            if (api === 'ppg') providerName = 'Google';
-            else if (api === 'ppo') providerName = 'OpenRouter (Free)';
-            else if (api === 'ppl') providerName = 'GLM';
-            
-            if (!groups[providerName]) groups[providerName] = [];
-            groups[providerName].push({id: modelId, name: displayName});
-        });
-        
-        if (provider.fallbackModels) {
-            provider.fallbackModels.forEach(modelId => {
-                if (!provider.models.includes(modelId)) {
-                    const displayName = MODEL_LIST[modelId] || modelId;
-                    const providerName = 'Auto-Fallback';
-                    if (!groups[providerName]) groups[providerName] = [];
-                    groups[providerName].push({id: modelId, name: displayName + ' ✓'});
-                }
-            });
-        }
-        
-        const order = ['Google', 'OpenRouter (Free)', 'GLM', 'Auto-Fallback'];
-        order.forEach(p => {
-            if (groups[p] && groups[p].length) {
-                const og = document.createElement('optgroup');
-                og.label = p;
-                groups[p].forEach(({id, name}) => {
-                    const opt = document.createElement('option');
-                    opt.value = id;
-                    opt.textContent = name.length > 28 ? name.slice(0,26)+'…' : name;
-                    og.appendChild(opt);
-                });
-                modelSelect.appendChild(og);
-            }
+            const opt = document.createElement('option');
+            opt.value = modelId;
+            opt.textContent = displayName.length > 28 ? displayName.slice(0,26)+'…' : displayName;
+            modelSelect.appendChild(opt);
         });
         
         if (modelSelect.options.length > 0) {
@@ -310,14 +250,14 @@
         loadModelsForAPI(api);
     }
     
-    // ---------- API SELECTOR EVENTS ----------
+    // ---------- API SELECTOR ----------
     apiSelector.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         const api = btn.dataset.api;
         if (api === currentAPI) return;
         selectAPI(api);
-        appendMessage('agi', `🔄 API পরিবর্তন: ${API_PROVIDERS[api].label}`, 'system');
+        appendMessage('agi', `🔄 API: ${API_PROVIDERS[api].label}`, 'system');
     });
     
     // ---------- LOAD INITIAL ----------
@@ -333,10 +273,10 @@
     }
     updateModeUI();
     
-    // ---------- MEMORY COUNTER ----------
+    // ---------- MEMORY ----------
     function updateMemCounter() {
         memCount.textContent = memoryStore.length;
-        try { localStorage.setItem('neuron_agi_memory_v7', JSON.stringify(memoryStore)); } catch(e) {}
+        try { localStorage.setItem('neuron_agi_memory_v8', JSON.stringify(memoryStore)); } catch(e) {}
     }
     updateMemCounter();
     
@@ -412,7 +352,8 @@
         meta.className = 'msg-meta';
         const tag = document.createElement('span');
         tag.className = 'tag';
-        tag.innerHTML = `<i class="fas fa-microchip"></i> ${modelUsed || modelSelect.value || 'unknown'}`;
+        const shortModel = modelUsed || modelSelect.value || 'unknown';
+        tag.textContent = shortModel.length > 12 ? shortModel.slice(0,10)+'…' : shortModel;
         const time = document.createElement('span');
         time.textContent = new Date().toLocaleTimeString();
         meta.appendChild(tag);
@@ -446,7 +387,7 @@
         if (el) el.remove();
     }
     
-    // ---------- EXTRACT ZIP ----------
+    // ---------- ZIP ----------
     async function extractZip(file) {
         try {
             const arrayBuffer = await file.arrayBuffer();
@@ -466,7 +407,7 @@
         } catch(e) { return '[ZIP extract error]'; }
     }
     
-    // ---------- PROCESS FILE ----------
+    // ---------- FILE ----------
     async function processFile(file) {
         const name = file.name.toLowerCase();
         if (name.endsWith('.zip') || name.endsWith('.tar.gz') || name.endsWith('.tgz')) {
@@ -483,14 +424,14 @@
         }
     }
     
-    // ---------- BUILD AGI CONTEXT ----------
+    // ---------- AGI CONTEXT ----------
     function buildAdvanceContext(userMessage, fileInfo) {
         const relevant = vectorSearch(userMessage, 5);
         let context = '';
         if (fileInfo) {
-            if (fileInfo.type === 'zip') context += '📦 [ZIP আর্কাইভ] এক্সট্র্যাক্ট করা হয়েছে। ';
+            if (fileInfo.type === 'zip') context += '📦 [ZIP] এক্সট্র্যাক্ট। ';
             else if (fileInfo.name.match(/\.(js|py|java|go|rs|c|cpp|rb|php)$/)) {
-                context += '📄 [কোড ফাইল] আর্কিটেকচার বিশ্লেষণ: লেয়ার → মডিউল → ফাংশন। ';
+                context += '📄 [কোড] আর্কিটেকচার: লেয়ার→মডিউল→ফাংশন। ';
             }
         }
         const topics = memoryStore.slice(-6).map(m => (m.content||'').substring(0, 40)).filter(Boolean);
@@ -500,34 +441,30 @@
         return context;
     }
     
-    // ---------- CALL API (অটো-ফলব্যাক সহ) ----------
+    // ---------- CALL API (অটো-ফলব্যাক) ----------
     async function callAPI(messages, model, stream = false) {
         const provider = API_PROVIDERS[currentAPI];
-        if (!provider) throw new Error('Invalid API provider');
+        if (!provider) throw new Error('Invalid API');
         
         const apiKey = provider.apiKey;
         const baseUrl = provider.baseUrl;
         
         if (currentAPI === 'ppg') {
-            // Google Gemini API
             const modelName = model || 'gemini-3.5-flash';
             const url = `${baseUrl}/${modelName}:generateContent?key=${apiKey}`;
             const promptText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-            
-            // 2000 tokens-এ limit (402 error এড়াতে)
-            const trimmedPrompt = promptText.length > 4000 ? promptText.slice(0, 4000) : promptText;
+            const trimmed = promptText.length > 4000 ? promptText.slice(0, 4000) : promptText;
             
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: trimmedPrompt }] }],
+                    contents: [{ parts: [{ text: trimmed }] }],
                     generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
                 })
             });
             
             if (!response.ok) {
-                const errText = await response.text();
                 for (const fallback of provider.fallbackModels) {
                     if (fallback === model) continue;
                     try {
@@ -536,7 +473,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: trimmedPrompt }] }],
+                                contents: [{ parts: [{ text: trimmed }] }],
                                 generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
                             })
                         });
@@ -555,10 +492,8 @@
             return { message: { content: text } };
             
         } else if (currentAPI === 'ppo') {
-            // OpenRouter API - শুধু ফ্রি মডেল
-            const modelId = model || 'deepseek/deepseek-r1:free';
+            const modelId = model || 'openrouter/free';
             
-            // 500 tokens limit (402 error এড়াতে)
             const trimmedMessages = messages.map(m => ({
                 role: m.role,
                 content: m.content.length > 3000 ? m.content.slice(0, 3000) : m.content
@@ -582,8 +517,6 @@
             });
             
             if (!response.ok) {
-                const errText = await response.text();
-                // Fallback মডেল try
                 for (const fallback of provider.fallbackModels) {
                     if (fallback === modelId) continue;
                     try {
@@ -614,67 +547,12 @@
             
             if (stream) return response.body;
             return await response.json();
-            
-        } else if (currentAPI === 'ppl') {
-            // GLM API - সব মডেল
-            const modelId = model || 'glm-4';
-            
-            const trimmedMessages = messages.map(m => ({
-                role: m.role,
-                content: m.content.length > 3000 ? m.content.slice(0, 3000) : m.content
-            }));
-            
-            const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: modelId,
-                    messages: trimmedMessages,
-                    stream: stream,
-                    temperature: 0.7,
-                    max_tokens: 500
-                })
-            });
-            
-            if (!response.ok) {
-                const errText = await response.text();
-                for (const fallback of provider.fallbackModels) {
-                    if (fallback === modelId) continue;
-                    try {
-                        const fbResp = await fetch(baseUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${apiKey}`
-                            },
-                            body: JSON.stringify({
-                                model: fallback,
-                                messages: trimmedMessages,
-                                stream: stream,
-                                temperature: 0.7,
-                                max_tokens: 500
-                            })
-                        });
-                        if (fbResp.ok) {
-                            if (stream) return fbResp.body;
-                            return await fbResp.json();
-                        }
-                    } catch(e) {}
-                }
-                throw new Error(`GLM error: ${response.status}`);
-            }
-            
-            if (stream) return response.body;
-            return await response.json();
         }
         
-        throw new Error('Unknown API provider');
+        throw new Error('Unknown API');
     }
     
-    // ---------- PROCESS STREAM ----------
+    // ---------- STREAM ----------
     async function processStream(reader, bubble) {
         const decoder = new TextDecoder();
         let fullReply = '';
@@ -708,15 +586,16 @@
                     }
                 }
             }
-        } catch(streamError) {
-            console.warn('Stream read error:', streamError);
-        }
+        } catch(e) { console.warn('Stream error:', e); }
         
         return { fullReply, hasContent };
     }
     
-    // ---------- SEND MESSAGE ----------
+    // ---------- SEND ----------
     async function handleSend() {
+        if (isProcessing) return;
+        isProcessing = true;
+        
         let userText = prompt.value.trim();
         let fileObj = null;
         
@@ -731,23 +610,21 @@
         }
         
         if (!userText) {
-            if (!fileObj) return;
+            if (!fileObj) { isProcessing = false; return; }
             if (fileObj) userText = fileObj.content || '[file]';
-            else return;
+            else { isProcessing = false; return; }
         }
         
-        const model = modelSelect.value || 'gpt-4o';
+        const model = modelSelect.value || 'openrouter/free';
         appendMessage('user', userText, model, fileObj);
         prompt.value = '';
         if (!fileInput.files.length) fileName.textContent = 'কোন ফাইল নেই';
         
         let agiContext = '';
-        let systemPrompt = 'You are a helpful AI assistant. Provide clear, structured responses. Use markdown for formatting. Keep responses concise.';
+        let systemPrompt = 'You are a helpful AI. Keep responses concise. Use markdown.';
         if (currentMode === 'advance') {
             agiContext = buildAdvanceContext(userText, fileObj);
-            systemPrompt = `You are Neuron AGI with advanced memory & reasoning. Context: ${agiContext}. 
-            Provide structured, layered answers. For code, give step-by-step plans with architecture layers.
-            Use markdown for formatting. Keep responses concise.`;
+            systemPrompt = `Neuron AGI with memory. Context: ${agiContext}. Provide structured, layered answers. Use markdown. Concise.`;
         }
         
         const recentMem = memoryStore.slice(-6).map(m => `${m.role}: ${(m.content||'').substring(0,200)}`).join('\n');
@@ -761,7 +638,7 @@
         showTyping();
         
         try {
-            const canStream = currentAPI === 'ppo' || currentAPI === 'ppl';
+            const canStream = currentAPI === 'ppo';
             
             if (canStream) {
                 const response = await callAPI(messages, model, true);
@@ -778,7 +655,7 @@
                     meta.className = 'msg-meta';
                     const tag = document.createElement('span');
                     tag.className = 'tag';
-                    tag.innerHTML = `<i class="fas fa-microchip"></i> ${model}`;
+                    tag.textContent = model.length > 12 ? model.slice(0,10)+'…' : model;
                     const time = document.createElement('span');
                     time.textContent = new Date().toLocaleTimeString();
                     meta.appendChild(tag);
@@ -787,34 +664,29 @@
                     msgDiv.appendChild(meta);
                     chat.appendChild(msgDiv);
                     
-                    const streamPromise = processStream(reader, bubble);
-                    const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Stream timeout')), 60000);
-                    });
-                    
-                    const { fullReply, hasContent } = await Promise.race([streamPromise, timeoutPromise]);
+                    const { fullReply, hasContent } = await processStream(reader, bubble);
                     
                     if (!fullReply || !hasContent) {
-                        const fallback = await callAPI(messages, model, false);
+                        const fallback = await callAPI(messages, 'openrouter/free', false);
                         let reply = fallback?.message?.content || fallback?.choices?.[0]?.message?.content || 'No response';
                         if (typeof reply === 'object') reply = JSON.stringify(reply);
                         bubble.innerHTML = renderMarkdown(reply);
-                        const entry = { role: 'agi', content: reply, model, timestamp: new Date().toISOString(), file: null, mode: currentMode };
+                        const entry = { role: 'agi', content: reply, model: 'auto-fallback', timestamp: new Date().toISOString(), file: null, mode: currentMode };
                         memoryStore.push(entry);
                         if (memoryStore.length > 800) memoryStore.shift();
                         updateMemCounter();
                     } else {
-                        const entry = { role: 'agi', content: fullReply, model, timestamp: new Date().toISOString(), file: null, mode: currentMode };
+                        const entry = { role: 'agi', content: fullReply, model: model, timestamp: new Date().toISOString(), file: null, mode: currentMode };
                         memoryStore.push(entry);
                         if (memoryStore.length > 800) memoryStore.shift();
                         updateMemCounter();
                     }
                 } else {
                     hideTyping();
-                    const data = await callAPI(messages, model, false);
+                    const data = await callAPI(messages, 'openrouter/free', false);
                     let reply = data?.message?.content || data?.choices?.[0]?.message?.content || 'No response';
                     if (typeof reply === 'object') reply = JSON.stringify(reply);
-                    appendMessage('agi', reply, model);
+                    appendMessage('agi', reply, 'auto-fallback');
                 }
             } else {
                 hideTyping();
@@ -828,33 +700,34 @@
             hideTyping();
             console.error('Error:', err);
             
-            // Fallback: try another model
+            // Auto-fallback: try all models
             try {
-                const fallbackModels = ['deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'glm-4'];
+                const fallbackList = ['openrouter/free', 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'qwen/qwen-2.5-coder-32b-instruct:free'];
                 let fallbackReply = null;
-                for (const fbModel of fallbackModels) {
+                for (const fbModel of fallbackList) {
                     if (fbModel === model) continue;
                     try {
                         const fbResp = await callAPI(messages, fbModel, false);
                         const reply = fbResp?.message?.content || fbResp?.choices?.[0]?.message?.content;
                         if (reply) {
                             fallbackReply = reply;
+                            appendMessage('agi', fallbackReply, 'auto-fallback');
                             break;
                         }
                     } catch(e) {}
                 }
-                if (fallbackReply) {
-                    appendMessage('agi', fallbackReply, 'auto-fallback');
-                } else {
-                    appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'API সংযোগ সমস্যা'}`, model);
+                if (!fallbackReply) {
+                    appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'API সংযোগ সমস্যা'}`, 'error');
                 }
             } catch(e2) {
-                appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'সব API ব্যর্থ'}`, model);
+                appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'সব API ব্যর্থ'}`, 'error');
             }
         }
+        
+        isProcessing = false;
     }
     
-    // ---------- MODE TOGGLE ----------
+    // ---------- EVENTS ----------
     modeToggle.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
@@ -862,22 +735,20 @@
         if (mode === currentMode) return;
         currentMode = mode;
         updateModeUI();
-        appendMessage('agi', `🔄 মোড: ${currentMode === 'advance' ? 'AGI অ্যাডভান্স' : 'সরল'} সক্রিয়।`, 'system');
+        appendMessage('agi', `🔄 মোড: ${currentMode === 'advance' ? 'AGI' : 'সরল'}`, 'system');
     });
     
-    // ---------- CLEAR ----------
     clearBtn.addEventListener('click', () => {
         memoryStore = [];
         updateMemCounter();
         chat.innerHTML = '';
         const welcome = document.createElement('div');
         welcome.className = 'msg agi';
-        welcome.innerHTML = `<div class="bubble"><i class="fas fa-brain" style="color:#6fcf97;margin-right:6px;"></i> মেমরি রিসেট। Neuron AGI পুনরায় চালু।</div>
+        welcome.innerHTML = `<div class="bubble"><i class="fas fa-brain" style="color:#6fcf97;margin-right:6px;"></i> মেমরি রিসেট।</div>
         <div class="msg-meta"><span class="tag">system</span><span>now</span></div>`;
         chat.appendChild(welcome);
     });
     
-    // ---------- EVENTS ----------
     sendBtn.addEventListener('click', handleSend);
     prompt.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -898,7 +769,7 @@
     });
     
     updateMemCounter();
-    console.log('✅ Neuron AGI - Free models only, auto-fallback, no Claude/GPT paid models');
+    console.log('✅ Neuron AGI - PPG + PPO only, GLM removed, auto-fallback');
 })();
 </script>
 </body>
