@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Neuron OS · AGI Chat</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <!-- marked + highlight for markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- JSZip for zip extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #0a0f15;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px;
+        }
+        .app {
+            max-width: 480px;
+            width: 100%;
+            background: #131b24;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+            border: 1px solid #2a3542;
+            height: 94vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            padding: 14px 16px 10px;
+            background: #17212b;
+            border-bottom: 1px solid #2b3848;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+        .header .left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        .header .left i {
+            color: #6fcf97;
+            font-size: 1.7rem;
+            filter: drop-shadow(0 0 6px #6fcf9750);
+        }
+        .header .left h1 {
+            color: #ecf3fa;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .mode-toggle {
+            background: #0f171f;
+            border-radius: 40px;
+            padding: 4px;
+            display: flex;
+            border: 1px solid #2c3d4e;
+        }
+        .mode-toggle button {
+            background: transparent;
+            border: none;
+            color: #8aa9c7;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .mode-toggle button.active {
+            background: #2b6b9c;
+            color: white;
+            box-shadow: 0 2px 8px #1f4f78;
+        }
+        .model-selector {
+            background: #0f171f;
+            border-radius: 40px;
+            padding: 4px 12px 4px 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #314152;
+            margin-left: auto;
+        }
+        .model-selector select {
+            background: transparent;
+            border: none;
+            color: #c4d9ed;
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 4px 0;
+            outline: none;
+            max-width: 130px;
+            cursor: pointer;
+        }
+        .model-selector select option {
+            background: #1a2633;
+            color: #dfecf5;
+        }
+        .model-selector i {
+            color: #6fcf97;
+            font-size: 0.8rem;
+        }
+        .memory-stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 16px 6px;
+            background: #101a22;
+            border-bottom: 1px solid #1e2c3a;
+            font-size: 0.65rem;
+            color: #8baac9;
+            flex-wrap: wrap;
+        }
+        .memory-stats span i {
+            margin-right: 4px;
+            color: #6fcf97;
+        }
+        .badge-mem {
+            background: #1a2938;
+            padding: 2px 14px;
+            border-radius: 40px;
+            color: #b6d4ef;
+        }
+        .chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 14px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0d151e;
+            scroll-behavior: smooth;
+        }
+        .msg {
+            display: flex;
+            flex-direction: column;
+            max-width: 92%;
+            animation: fadeUp 0.25s ease;
+        }
+        .msg.user {
+            align-self: flex-end;
+        }
+        .msg.agi {
+            align-self: flex-start;
+        }
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 22px;
+            background: #1e2a36;
+            color: #e3edf7;
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-size: 0.92rem;
+            border: 1px solid #2d3d4d;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            overflow-x: auto;
+        }
+        .bubble pre {
+            background: #0d1520;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+            border: 1px solid #2a3a4a;
+        }
+        .bubble code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+        .bubble h1, .bubble h2, .bubble h3 {
+            color: #d6e8f7;
+            margin: 8px 0 4px;
+        }
+        .bubble ul, .bubble ol {
+            padding-left: 20px;
+            margin: 6px 0;
+        }
+        .bubble p {
+            margin: 4px 0;
+        }
+        .msg.user .bubble {
+            background: #1f5a82;
+            border-color: #3d89c0;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+        .msg.agi .bubble {
+            background: #17222e;
+            border-bottom-left-radius: 6px;
+            border-color: #334a5e;
+        }
+        .msg-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: #6e8aa8;
+            padding: 3px 10px 0;
+        }
+        .msg-meta .tag {
+            background: #1d2b3b;
+            padding: 0 12px;
+            border-radius: 30px;
+            color: #b2cfe9;
+        }
+        .input-area {
+            padding: 8px 14px 16px;
+            background: #121c26;
+            border-top: 1px solid #25323f;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .input-row textarea {
+            flex: 1;
+            background: #1a2633;
+            border: 1px solid #2e3f50;
+            border-radius: 28px;
+            padding: 12px 18px;
+            color: #e2eefb;
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+            min-height: 48px;
+            max-height: 120px;
+            line-height: 1.4;
+        }
+        .input-row textarea:focus {
+            border-color: #4a8fc9;
+        }
+        .input-row button {
+            background: #2b6b9c;
+            border: none;
+            border-radius: 40px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            border: 1px solid #3f84bb;
+            box-shadow: 0 4px 12px #1f4b6e50;
+            transition: 0.1s;
+        }
+        .input-row button:active {
+            transform: scale(0.92);
+            background: #1f5a82;
+        }
+        .attach-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 4px;
+            flex-wrap: wrap;
+        }
+        .attach-bar label {
+            color: #82a5c7;
+            font-size: 0.8rem;
+            background: #1a2736;
+            padding: 4px 16px 4px 12px;
+            border-radius: 40px;
+            border: 1px dashed #3e5368;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .attach-bar label i {
+            color: #6fcf97;
+        }
+        .attach-bar input[type="file"] { display: none; }
+        .file-name {
+            color: #9bbde0;
+            font-size: 0.7rem;
+            background: #172433;
+            padding: 2px 14px;
+            border-radius: 40px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .clear-mem {
+            background: transparent;
+            border: 1px solid #2e4053;
+            color: #7c9ebf;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            background: #15212d;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .clear-mem:active {
+            background: #253646;
+        }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            color: #8baac9;
+            font-size: 0.8rem;
+        }
+        .typing-dots span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #6fcf97;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingBounce 1.2s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0.3; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat::-webkit-scrollbar { width: 4px; }
+        .chat::-webkit-scrollbar-track { background: #101b26; }
+        .chat::-webkit-scrollbar-thumb { background: #3a526b; border-radius: 20px; }
+        .copy-btn {
+            background: #2a3a4a;
+            border: none;
+            color: #aac3db;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            cursor: pointer;
+            float: right;
+            margin: 4px 0 0 8px;
+        }
+        .copy-btn:hover { background: #3a5068; }
+        .hljs {
+            background: #0d1520 !important;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="header">
+        <div class="left">
+            <i class="fas fa-brain"></i>
+            <h1>Neuron OS</h1>
+        </div>
+        <div class="mode-toggle" id="modeToggle">
+            <button class="active" data-mode="simple">সরল</button>
+            <button data-mode="advance">AGI</button>
+        </div>
+        <div class="model-selector">
+            <i class="fas fa-microchip"></i>
+            <select id="modelSelect"><option value="">লোড...</option></select>
+        </div>
+    </div>
+    <div class="memory-stats">
+        <span><i class="fas fa-database"></i> মেমরি: <span id="memCount">0</span></span>
+        <span class="badge-mem"><i class="fas fa-brain"></i> AGI auto‑plan</span>
+        <span><i class="fas fa-sync-alt fa-fw"></i> <span id="modeLabel">সরল</span></span>
+    </div>
+    <div class="chat" id="chatContainer">
+        <div class="msg agi">
+            <div class="bubble"><i class="fas fa-brain" style="color:#6fcf97;margin-right:6px;"></i> Neuron OS সক্রিয়। <span id="greetingMode">সরল</span> মোড।</div>
+            <div class="msg-meta"><span class="tag">system</span><span>now</span></div>
+        </div>
+    </div>
+    <div class="input-area">
+        <div class="input-row">
+            <textarea id="prompt" rows="1" placeholder="মেসেজ বা কোড দিন..."></textarea>
+            <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div class="attach-bar">
+            <label for="fileInput"><i class="fas fa-paperclip"></i> ফাইল</label>
+            <input type="file" id="fileInput" accept=".txt,.js,.py,.html,.css,.json,.md,.csv,.xml,.yml,.java,.c,.cpp,.go,.rs,.sh,.rb,.php,.zip,.tar.gz">
+            <span class="file-name" id="fileName">কোন ফাইল নেই</span>
+            <button class="clear-mem" id="clearMemBtn"><i class="fas fa-eraser"></i> রিসেট</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- CONFIG ----------
+        const STORAGE_KEY = 'neuron_os_memory_v4';
+        const MAX_MEMORY = 800;
+
+        // ---------- MEMORY ----------
+        let memoryStore = [];
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) memoryStore = JSON.parse(stored);
+            if (!Array.isArray(memoryStore)) memoryStore = [];
+        } catch(e) { memoryStore = []; }
+
+        // ---------- DOM REFS ----------
+        const chat = document.getElementById('chatContainer');
+        const prompt = document.getElementById('prompt');
+        const sendBtn = document.getElementById('sendBtn');
+        const modelSelect = document.getElementById('modelSelect');
+        const memCount = document.getElementById('memCount');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const clearBtn = document.getElementById('clearMemBtn');
+        const modeToggle = document.getElementById('modeToggle');
+        const modeLabel = document.getElementById('modeLabel');
+        const greetingMode = document.getElementById('greetingMode');
+
+        let currentMode = 'simple';
+        try {
+            const m = localStorage.getItem('neuron_os_mode');
+            if (m === 'advance' || m === 'simple') currentMode = m;
+        } catch(e) {}
+        updateModeUI();
+
+        // ---------- MODEL LIST (with fallback) ----------
+        async function loadModels() {
+            try {
+                // try listModels
+                const models = await puter.ai.listModels();
+                if (models && models.length > 0) {
+                    modelSelect.innerHTML = '';
+                    const groups = {};
+                    models.forEach(m => {
+                        const id = m.id || m.model || m.name;
+                        if (!id) return;
+                        let provider = 'অন্যান্য';
+                        if (id.includes('gpt')) provider = 'GPT';
+                        else if (id.includes('claude')) provider = 'Claude';
+                        else if (id.includes('gemini')) provider = 'Gemini';
+                        else if (id.includes('deepseek')) provider = 'DeepSeek';
+                        else if (id.includes('qwen')) provider = 'Qwen';
+                        else if (id.includes('llama')) provider = 'Llama';
+                        else if (id.includes('grok')) provider = 'Grok';
+                        else if (id.includes('mistral')) provider = 'Mistral';
+                        else if (id.includes('phi')) provider = 'Phi';
+                        if (!groups[provider]) groups[provider] = [];
+                        groups[provider].push(id);
+                    });
+                    const order = ['GPT','Claude','Gemini','DeepSeek','Qwen','Llama','Grok','Mistral','Phi','অন্যান্য'];
+                    order.forEach(p => {
+                        if (groups[p] && groups[p].length) {
+                            const og = document.createElement('optgroup');
+                            og.label = p;
+                            groups[p].forEach(id => {
+                                const opt = document.createElement('option');
+                                opt.value = id;
+                                opt.textContent = id.length > 30 ? id.slice(0,28)+'…' : id;
+                                og.appendChild(opt);
+                            });
+                            modelSelect.appendChild(og);
+                        }
+                    });
+                    if (modelSelect.options.length === 0) fallbackModels();
+                } else {
+                    fallbackModels();
+                }
+            } catch(e) {
+                console.warn('Model list fallback:', e);
+                fallbackModels();
+            }
+        }
+        function fallbackModels() {
+            modelSelect.innerHTML = `
+                <optgroup label="GPT"><option value="gpt-4o">GPT-4o</option><option value="gpt-4-turbo">GPT-4 Turbo</option></optgroup>
+                <optgroup label="Claude"><option value="claude-3-opus">Claude 3 Opus</option><option value="claude-3-sonnet">Claude 3 Sonnet</option></optgroup>
+                <optgroup label="Gemini"><option value="gemini-1.5-pro">Gemini 1.5 Pro</option></optgroup>
+                <optgroup label="DeepSeek"><option value="deepseek/deepseek-v4">DeepSeek v4</option><option value="deepseek/deepseek-v3.2">DeepSeek v3.2</option></optgroup>
+                <optgroup label="Qwen"><option value="qwen/qwen-2.5-72b">Qwen 2.5 72B</option></optgroup>
+                <optgroup label="Llama"><option value="llama/llama-3.1-405b">Llama 3.1 405B</option></optgroup>
+                <optgroup label="Grok"><option value="grok/grok-1">Grok-1</option></optgroup>
+            `;
+        }
+        loadModels();
+
+        // ---------- MEMORY OPS ----------
+        function updateMemCounter() {
+            memCount.textContent = memoryStore.length;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryStore));
+            } catch(e) {}
+        }
+        updateMemCounter();
+
+        // ---------- VECTOR SEARCH (embedding sim) ----------
+        // Simple TF-IDF based search with keyword weighting (simulate vector)
+        function vectorSearch(query, topK = 5) {
+            if (!query || memoryStore.length === 0) return memoryStore.slice(-4);
+            const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+            if (words.length === 0) return memoryStore.slice(-4);
+            const scored = memoryStore.map((item, idx) => {
+                const text = (item.content || '').toLowerCase();
+                let score = 0;
+                words.forEach(w => {
+                    if (text.includes(w)) score += 2 + (text.split(w).length - 1) * 0.7;
+                });
+                // boost recent
+                const age = (Date.now() - new Date(item.timestamp || 0).getTime()) / 86400000;
+                score += Math.max(0, 1 - age / 30);
+                return { idx, score, item };
+            });
+            scored.sort((a,b) => b.score - a.score);
+            const top = scored.filter(s => s.score > 0.5).slice(0, topK);
+            if (top.length === 0) return memoryStore.slice(-4);
+            return top.map(s => s.item);
+        }
+
+        // ---------- RENDER MARKDOWN + CODE HIGHLIGHT ----------
+        function renderMarkdown(text) {
+            if (!text) return '';
+            // use marked
+            let html = marked.parse(text);
+            // highlight code blocks
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            temp.querySelectorAll('pre code').forEach(block => {
+                hljs.highlightElement(block);
+                // add copy button
+                const pre = block.parentElement;
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                copyBtn.onclick = () => {
+                    navigator.clipboard?.writeText(block.textContent);
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1500);
+                };
+                pre.style.position = 'relative';
+                pre.appendChild(copyBtn);
+            });
+            return temp.innerHTML;
+        }
+
+        // ---------- APPEND MESSAGE (with markdown) ----------
+        function appendMessage(role, content, modelUsed, fileInfo = null, isStreaming = false) {
+            if (!content && !fileInfo) return;
+            const entry = {
+                role: role,
+                content: content || '',
+                model: modelUsed || modelSelect.value || 'unknown',
+                timestamp: new Date().toISOString(),
+                file: fileInfo ? { name: fileInfo.name, type: fileInfo.type } : null,
+                mode: currentMode
+            };
+            memoryStore.push(entry);
+            if (memoryStore.length > MAX_MEMORY) memoryStore.shift();
+            updateMemCounter();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg ${role === 'user' ? 'user' : 'agi'}`;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            let displayContent = content || '';
+            if (fileInfo) {
+                displayContent = '📎 ' + fileInfo.name + '\n' + displayContent;
+            }
+            // render markdown for AGI, plain for user
+            if (role === 'agi') {
+                bubble.innerHTML = renderMarkdown(displayContent);
+            } else {
+                bubble.textContent = displayContent;
+            }
+            const meta = document.createElement('div');
+            meta.className = 'msg-meta';
+            const tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.innerHTML = `<i class="fas fa-microchip"></i> ${modelUsed || modelSelect.value || 'unknown'}`;
+            const time = document.createElement('span');
+            time.textContent = new Date().toLocaleTimeString();
+            meta.appendChild(tag);
+            meta.appendChild(time);
+            msgDiv.appendChild(bubble);
+            msgDiv.appendChild(meta);
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
+            return msgDiv;
+        }
+
+        // ---------- TYPING ----------
+        function showTyping() {
+            const typing = document.createElement('div');
+            typing.className = 'msg agi';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `<div class="bubble" style="background:#1a2838;border-color:#2f4459;">
+                <div class="typing-indicator"><i class="fas fa-brain" style="color:#6fcf97;"></i> চিন্তা করছি 
+                <span class="typing-dots"><span></span><span></span><span></span></span></div>
+            </div>`;
+            chat.appendChild(typing);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        function hideTyping() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        // ---------- EXTRACT ZIP (using JSZip) ----------
+        async function extractZip(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                let combined = '';
+                const files = Object.keys(zip.files);
+                for (const name of files) {
+                    const entry = zip.files[name];
+                    if (!entry.dir) {
+                        try {
+                            const content = await entry.async('string');
+                            combined += `\n--- ${name} ---\n${content.slice(0, 2000)}\n`;
+                        } catch(e) {}
+                    }
+                }
+                return combined.slice(0, 15000);
+            } catch(e) {
+                return '[ZIP extract error]';
+            }
+        }
+
+        // ---------- HANDLE FILE (text or zip) ----------
+        async function processFile(file) {
+            const name = file.name.toLowerCase();
+            if (name.endsWith('.zip') || name.endsWith('.tar.gz') || name.endsWith('.tgz')) {
+                const content = await extractZip(file);
+                return { name: file.name, type: 'zip', content };
+            } else {
+                try {
+                    let text = await file.text();
+                    // chunk large files: keep last 15000 chars
+                    if (text.length > 15000) text = '...(ফাইল বড়, শেষ অংশ)...\n' + text.slice(-12000);
+                    return { name: file.name, type: file.type || 'text', content: text };
+                } catch(e) {
+                    return { name: file.name, type: file.type, content: '[file read error]' };
+                }
+            }
+        }
+
+        // ---------- BUILD AGI CONTEXT (with vector search) ----------
+        function buildAdvanceContext(userMessage, fileInfo) {
+            const relevant = vectorSearch(userMessage, 5);
+            let context = '';
+            if (fileInfo) {
+                if (fileInfo.type === 'zip') context += '📦 [ZIP আর্কাইভ] এক্সট্র্যাক্ট করা হয়েছে। ';
+                else if (fileInfo.name.match(/\.(js|py|java|go|rs|c|cpp|rb|php)$/)) {
+                    context += '📄 [কোড ফাইল] আর্কিটেকচার বিশ্লেষণ: লেয়ার → মডিউল → ফাংশন। ';
+                }
+            }
+            const topics = memoryStore.slice(-6).map(m => (m.content||'').substring(0, 40)).filter(Boolean);
+            if (topics.length > 1) context += `🧠 [টপিক] ${topics.slice(-3).join(' | ')}. `;
+            if (relevant.length) context += `🔍 [প্রাসঙ্গিক] ${relevant.map(r => (r.content||'').substring(0,40)).join(' | ')}. `;
+            context += `মোট ${memoryStore.length}টি মেমরি।`;
+            return context;
+        }
+
+        // ---------- CHECK IF MODEL SUPPORTS STREAM (rough) ----------
+        function modelSupportsStream(modelId) {
+            if (!modelId) return true;
+            const noStream = ['deepseek/deepseek-v3.2', 'deepseek/deepseek-r1-0528', 'grok/grok-1', 'grok/grok-2'];
+            return !noStream.some(m => modelId.includes(m));
+        }
+
+        // ---------- SEND MESSAGE ----------
+        async function handleSend() {
+            let userText = prompt.value.trim();
+            let fileObj = null;
+
+            if (fileInput.files.length > 0) {
+                const f = fileInput.files[0];
+                const processed = await processFile(f);
+                fileObj = processed;
+                if (userText) userText += '\n\n' + processed.content;
+                else userText = processed.content;
+                fileName.textContent = f.name.length > 22 ? f.name.slice(0,20)+'…' : f.name;
+                fileInput.value = '';
+            }
+
+            if (!userText) {
+                if (!fileObj) return;
+                if (fileObj) userText = fileObj.content || '[file]';
+                else return;
+            }
+
+            const model = modelSelect.value || 'gpt-4o';
+            appendMessage('user', userText, model, fileObj);
+            prompt.value = '';
+            if (!fileInput.files.length) fileName.textContent = 'কোন ফাইল নেই';
+
+            let agiContext = '';
+            let systemPrompt = 'You are a helpful assistant.';
+            if (currentMode === 'advance') {
+                agiContext = buildAdvanceContext(userText, fileObj);
+                systemPrompt = `You are Neuron OS with memory & reasoning. Context: ${agiContext}. 
+                Provide structured, layered answers. For code, give step-by-step plans. Use markdown.`;
+            }
+
+            const recentMem = memoryStore.slice(-8).map(m => `${m.role}: ${(m.content||'').substring(0,250)}`).join('\n');
+            const fullPrompt = `[মেমরি]\n${recentMem}\n\n${currentMode === 'advance' ? '[AGI প্ল্যান] '+agiContext : ''}\n\nব্যবহারকারী: ${userText}\n\nউত্তর:`;
+
+            showTyping();
+
+            try {
+                const streamSupport = modelSupportsStream(model);
+                if (streamSupport) {
+                    // try streaming
+                    const response = await puter.ai.chat({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: fullPrompt }
+                        ],
+                        stream: true
+                    });
+
+                    hideTyping();
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'msg agi';
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+                    const meta = document.createElement('div');
+                    meta.className = 'msg-meta';
+                    const tag = document.createElement('span');
+                    tag.className = 'tag';
+                    tag.innerHTML = `<i class="fas fa-microchip"></i> ${model}`;
+                    const time = document.createElement('span');
+                    time.textContent = new Date().toLocaleTimeString();
+                    meta.appendChild(tag);
+                    meta.appendChild(time);
+                    msgDiv.appendChild(bubble);
+                    msgDiv.appendChild(meta);
+                    chat.appendChild(msgDiv);
+
+                    let fullReply = '';
+                    let firstChunk = true;
+                    for await (const chunk of response) {
+                        const content = chunk?.message?.content || chunk?.content || chunk?.text || '';
+                        if (content) {
+                            fullReply += content;
+                            if (firstChunk) {
+                                bubble.innerHTML = renderMarkdown(fullReply);
+                                firstChunk = false;
+                            } else {
+                                bubble.innerHTML = renderMarkdown(fullReply);
+                            }
+                            chat.scrollTop = chat.scrollHeight;
+                        }
+                    }
+                    if (!fullReply) {
+                        // fallback non-stream
+                        const fallback = await puter.ai.chat({
+                            model: model,
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: fullPrompt }
+                            ],
+                            stream: false
+                        });
+                        fullReply = fallback?.message?.content || fallback?.content || 'no response';
+                        bubble.innerHTML = renderMarkdown(fullReply);
+                    }
+                    // save memory
+                    const entry = { role: 'agi', content: fullReply, model, timestamp: new Date().toISOString(), file: null, mode: currentMode };
+                    memoryStore.push(entry);
+                    if (memoryStore.length > MAX_MEMORY) memoryStore.shift();
+                    updateMemCounter();
+
+                } else {
+                    // non-stream fallback
+                    const response = await puter.ai.chat({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: fullPrompt }
+                        ],
+                        stream: false
+                    });
+                    hideTyping();
+                    let reply = response?.message?.content || response?.content || 'no response';
+                    if (typeof reply === 'object') reply = JSON.stringify(reply);
+                    appendMessage('agi', reply, model);
+                }
+
+            } catch(err) {
+                hideTyping();
+                console.error(err);
+                // fallback to non-stream
+                try {
+                    const response = await puter.ai.chat({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: fullPrompt }
+                        ],
+                        stream: false
+                    });
+                    let reply = response?.message?.content || response?.content || 'error fallback';
+                    if (typeof reply === 'object') reply = JSON.stringify(reply);
+                    appendMessage('agi', reply, model);
+                } catch(e2) {
+                    appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'সংযোগ সমস্যা'}`, model);
+                }
+            }
+        }
+
+        // ---------- MODE TOGGLE ----------
+        function updateModeUI() {
+            const btns = modeToggle.querySelectorAll('button');
+            btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+            modeLabel.textContent = currentMode === 'advance' ? 'AGI' : 'সরল';
+            if (greetingMode) greetingMode.textContent = currentMode === 'advance' ? 'AGI' : 'সরল';
+            localStorage.setItem('neuron_os_mode', currentMode);
+        }
+        modeToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+            if (mode === currentMode) return;
+            currentMode = mode;
+            updateModeUI();
+            appendMessage('agi', `🔄 মোড: ${currentMode === 'advance' ? 'AGI অ্যাডভান্স' : 'সরল'} সক্রিয়।`, 'system');
+        });
+
+        // ---------- CLEAR ----------
+        clearBtn.addEventListener('click', () => {
+            memoryStore = [];
+            updateMemCounter();
+            chat.innerHTML = '';
+            const welcome = document.createElement('div');
+            welcome.className = 'msg agi';
+            welcome.innerHTML = `<div class="bubble"><i class="fas fa-brain" style="color:#6fcf97;margin-right:6px;"></i> মেমরি রিসেট। Neuron OS পুনরায় চালু।</div>
+            <div class="msg-meta"><span class="tag">system</span><span>now</span></div>`;
+            chat.appendChild(welcome);
+        });
+
+        // ---------- EVENTS ----------
+        sendBtn.addEventListener('click', handleSend);
+        prompt.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+        prompt.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name.length > 24 ? this.files[0].name.slice(0,22)+'…' : this.files[0].name;
+            } else {
+                fileName.textContent = 'কোন ফাইল নেই';
+            }
+        });
+
+        updateMemCounter();
+        updateModeUI();
+        console.log('Neuron OS with streaming, vector search, markdown, zip support.');
+    })();
+</script>
+</body>
+</html>
