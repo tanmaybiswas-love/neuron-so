@@ -446,7 +446,6 @@
         // ---------- MODEL LIST (with fallback) ----------
         async function loadModels() {
             try {
-                // try listModels
                 const models = await puter.ai.listModels();
                 if (models && models.length > 0) {
                     modelSelect.innerHTML = '';
@@ -513,7 +512,6 @@
         updateMemCounter();
 
         // ---------- VECTOR SEARCH (embedding sim) ----------
-        // Simple TF-IDF based search with keyword weighting (simulate vector)
         function vectorSearch(query, topK = 5) {
             if (!query || memoryStore.length === 0) return memoryStore.slice(-4);
             const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
@@ -524,7 +522,6 @@
                 words.forEach(w => {
                     if (text.includes(w)) score += 2 + (text.split(w).length - 1) * 0.7;
                 });
-                // boost recent
                 const age = (Date.now() - new Date(item.timestamp || 0).getTime()) / 86400000;
                 score += Math.max(0, 1 - age / 30);
                 return { idx, score, item };
@@ -538,14 +535,11 @@
         // ---------- RENDER MARKDOWN + CODE HIGHLIGHT ----------
         function renderMarkdown(text) {
             if (!text) return '';
-            // use marked
             let html = marked.parse(text);
-            // highlight code blocks
             const temp = document.createElement('div');
             temp.innerHTML = html;
             temp.querySelectorAll('pre code').forEach(block => {
                 hljs.highlightElement(block);
-                // add copy button
                 const pre = block.parentElement;
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'copy-btn';
@@ -561,8 +555,8 @@
             return temp.innerHTML;
         }
 
-        // ---------- APPEND MESSAGE (with markdown) ----------
-        function appendMessage(role, content, modelUsed, fileInfo = null, isStreaming = false) {
+        // ---------- APPEND MESSAGE ----------
+        function appendMessage(role, content, modelUsed, fileInfo = null) {
             if (!content && !fileInfo) return;
             const entry = {
                 role: role,
@@ -584,7 +578,6 @@
             if (fileInfo) {
                 displayContent = '📎 ' + fileInfo.name + '\n' + displayContent;
             }
-            // render markdown for AGI, plain for user
             if (role === 'agi') {
                 bubble.innerHTML = renderMarkdown(displayContent);
             } else {
@@ -623,7 +616,7 @@
             if (el) el.remove();
         }
 
-        // ---------- EXTRACT ZIP (using JSZip) ----------
+        // ---------- EXTRACT ZIP ----------
         async function extractZip(file) {
             try {
                 const arrayBuffer = await file.arrayBuffer();
@@ -645,7 +638,7 @@
             }
         }
 
-        // ---------- HANDLE FILE (text or zip) ----------
+        // ---------- PROCESS FILE ----------
         async function processFile(file) {
             const name = file.name.toLowerCase();
             if (name.endsWith('.zip') || name.endsWith('.tar.gz') || name.endsWith('.tgz')) {
@@ -654,7 +647,6 @@
             } else {
                 try {
                     let text = await file.text();
-                    // chunk large files: keep last 15000 chars
                     if (text.length > 15000) text = '...(ফাইল বড়, শেষ অংশ)...\n' + text.slice(-12000);
                     return { name: file.name, type: file.type || 'text', content: text };
                 } catch(e) {
@@ -663,7 +655,7 @@
             }
         }
 
-        // ---------- BUILD AGI CONTEXT (with vector search) ----------
+        // ---------- BUILD AGI CONTEXT ----------
         function buildAdvanceContext(userMessage, fileInfo) {
             const relevant = vectorSearch(userMessage, 5);
             let context = '';
@@ -680,11 +672,17 @@
             return context;
         }
 
-        // ---------- CHECK IF MODEL SUPPORTS STREAM (rough) ----------
+        // ---------- CHECK STREAM SUPPORT ----------
         function modelSupportsStream(modelId) {
             if (!modelId) return true;
             const noStream = ['deepseek/deepseek-v3.2', 'deepseek/deepseek-r1-0528', 'grok/grok-1', 'grok/grok-2'];
             return !noStream.some(m => modelId.includes(m));
+        }
+
+        // ---------- CORRECTED: CALL PUTER.AI.CHAT ----------
+        // সঠিক ফরম্যাট: puter.ai.chat(messagesArray, { model, stream })
+        async function callPuterChat(messages, options) {
+            return await puter.ai.chat(messages, options);
         }
 
         // ---------- SEND MESSAGE ----------
@@ -724,20 +722,18 @@
             const recentMem = memoryStore.slice(-8).map(m => `${m.role}: ${(m.content||'').substring(0,250)}`).join('\n');
             const fullPrompt = `[মেমরি]\n${recentMem}\n\n${currentMode === 'advance' ? '[AGI প্ল্যান] '+agiContext : ''}\n\nব্যবহারকারী: ${userText}\n\nউত্তর:`;
 
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: fullPrompt }
+            ];
+
             showTyping();
 
             try {
                 const streamSupport = modelSupportsStream(model);
                 if (streamSupport) {
-                    // try streaming
-                    const response = await puter.ai.chat({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: fullPrompt }
-                        ],
-                        stream: true
-                    });
+                    // STREAMING: messages as first arg, options as second
+                    const response = await callPuterChat(messages, { model, stream: true });
 
                     hideTyping();
                     const msgDiv = document.createElement('div');
@@ -774,14 +770,7 @@
                     }
                     if (!fullReply) {
                         // fallback non-stream
-                        const fallback = await puter.ai.chat({
-                            model: model,
-                            messages: [
-                                { role: 'system', content: systemPrompt },
-                                { role: 'user', content: fullPrompt }
-                            ],
-                            stream: false
-                        });
+                        const fallback = await callPuterChat(messages, { model, stream: false });
                         fullReply = fallback?.message?.content || fallback?.content || 'no response';
                         bubble.innerHTML = renderMarkdown(fullReply);
                     }
@@ -792,15 +781,8 @@
                     updateMemCounter();
 
                 } else {
-                    // non-stream fallback
-                    const response = await puter.ai.chat({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: fullPrompt }
-                        ],
-                        stream: false
-                    });
+                    // NON-STREAM: messages as first arg, options as second
+                    const response = await callPuterChat(messages, { model, stream: false });
                     hideTyping();
                     let reply = response?.message?.content || response?.content || 'no response';
                     if (typeof reply === 'object') reply = JSON.stringify(reply);
@@ -809,21 +791,15 @@
 
             } catch(err) {
                 hideTyping();
-                console.error(err);
-                // fallback to non-stream
+                console.error('Puter error:', err);
+                // Fallback non-stream with correct format
                 try {
-                    const response = await puter.ai.chat({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: fullPrompt }
-                        ],
-                        stream: false
-                    });
+                    const response = await callPuterChat(messages, { model, stream: false });
                     let reply = response?.message?.content || response?.content || 'error fallback';
                     if (typeof reply === 'object') reply = JSON.stringify(reply);
                     appendMessage('agi', reply, model);
                 } catch(e2) {
+                    console.error('Fallback error:', e2);
                     appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'সংযোগ সমস্যা'}`, model);
                 }
             }
@@ -881,7 +857,7 @@
 
         updateMemCounter();
         updateModeUI();
-        console.log('Neuron OS with streaming, vector search, markdown, zip support.');
+        console.log('Neuron OS with fixed puter.ai.chat() format.');
     })();
 </script>
 </body>
