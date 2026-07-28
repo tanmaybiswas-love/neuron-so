@@ -114,7 +114,7 @@
             <span class="api-label" id="apiLabel"><i class="fas fa-key"></i> PPG · Google</span>
             <span id="modelCount" style="font-size:0.55rem;color:#5f7f9c;">Model: 20+</span>
         </div>
-        <div class="security-notice"><i class="fas fa-shield-alt"></i> API keys এনক্রিপ্টেড</div>
+        <div class="security-notice"><i class="fas fa-shield-alt"></i> এনক্রিপ্টেড</div>
     </div>
 </div>
 
@@ -136,7 +136,7 @@
     const GEMINI_KEY = decodeKey(ENCRYPTED_KEYS.gemini);
     const GLM_KEY = decodeKey(ENCRYPTED_KEYS.glm);
     
-    // ---------- API PROVIDER SETTINGS ----------
+    // ---------- API PROVIDER SETTINGS (শুধু ফ্রি মডেল) ----------
     const API_PROVIDERS = {
         'ppg': {
             label: 'PPG · Google',
@@ -153,58 +153,59 @@
             icon: 'openrouter',
             apiKey: OPENROUTER_KEY,
             baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+            // শুধু ফ্রি মডেল - Claude/GPT বাদ
             models: [
-                'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini',
-                'claude-3-opus', 'claude-3-sonnet',
-                'deepseek/deepseek-v4', 'deepseek/deepseek-v3.2', 'deepseek/deepseek-r1',
-                'meta-llama/llama-3.3-70b-instruct', 'llama/llama-3.1-405b',
-                'qwen/qwen-2.5-coder-32b-instruct', 'qwen/qwen-2.5-72b',
-                'grok/grok-1', 'mistral/mistral-large',
+                'deepseek/deepseek-r1:free',
+                'deepseek/deepseek-v3.2:free',
+                'meta-llama/llama-3.3-70b-instruct:free',
+                'google/gemma-4-31b-it:free',
+                'qwen/qwen-2.5-coder-32b-instruct:free',
+                'qwen/qwen-2.5-72b:free',
                 'nvidia/nemotron-3-super-120b-a12b:free',
                 'xiaomi/mimo-v2-flash:free',
-                'qwen/qwen3.6-plus-preview:free'
+                'qwen/qwen3.6-plus-preview:free',
+                'mistral/mistral-large:free'
             ],
-            fallbackModels: ['gpt-4o', 'gpt-4-turbo', 'claude-3-opus', 'deepseek/deepseek-v4']
+            fallbackModels: [
+                'deepseek/deepseek-r1:free',
+                'meta-llama/llama-3.3-70b-instruct:free',
+                'qwen/qwen-2.5-coder-32b-instruct:free'
+            ]
         },
         'ppl': {
             label: 'PPL · GLM',
             icon: 'glm',
             apiKey: GLM_KEY,
             baseUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-            models: ['glm-5.2', 'glm-4', 'glm-4-flash'],
-            fallbackModels: ['glm-4', 'glm-4-flash']
+            models: ['glm-5.2', 'glm-4', 'glm-4-flash', 'glm-4v-plus', 'glm-4-air'],
+            fallbackModels: ['glm-4', 'glm-4-flash', 'glm-4-air']
         }
     };
     
-    // ---------- MODEL LIST (সব মডেল একত্রে) ----------
+    // ---------- MODEL LIST (শুধু ফ্রি) ----------
     const MODEL_LIST = {
         // PPG (Google)
         'gemini-3.5-flash': 'Gemini 3.5 Flash',
         'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
         'gemma-4-31b-it': 'Gemma 4 31B IT',
         'gemini-3.6-flash': 'Gemini 3.6 Flash',
-        // PPO (OpenRouter)
-        'gpt-4o': 'GPT-4o',
-        'gpt-4-turbo': 'GPT-4 Turbo',
-        'gpt-4o-mini': 'GPT-4o Mini',
-        'claude-3-opus': 'Claude 3 Opus',
-        'claude-3-sonnet': 'Claude 3 Sonnet',
-        'deepseek/deepseek-v4': 'DeepSeek v4',
-        'deepseek/deepseek-v3.2': 'DeepSeek v3.2',
-        'deepseek/deepseek-r1': 'DeepSeek R1',
-        'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B',
-        'llama/llama-3.1-405b': 'Llama 3.1 405B',
-        'qwen/qwen-2.5-coder-32b-instruct': 'Qwen 2.5 Coder',
-        'qwen/qwen-2.5-72b': 'Qwen 2.5 72B',
-        'grok/grok-1': 'Grok-1',
-        'mistral/mistral-large': 'Mistral Large',
-        'nvidia/nemotron-3-super-120b-a12b:free': 'NVIDIA Nemotron 3 Super (Free)',
-        'xiaomi/mimo-v2-flash:free': 'Xiaomi MiMo V2 Flash (Free)',
-        'qwen/qwen3.6-plus-preview:free': 'Qwen 3.6 Plus Preview (Free)',
+        // PPO (OpenRouter - শুধু ফ্রি)
+        'deepseek/deepseek-r1:free': 'DeepSeek R1 (Free)',
+        'deepseek/deepseek-v3.2:free': 'DeepSeek v3.2 (Free)',
+        'meta-llama/llama-3.3-70b-instruct:free': 'Llama 3.3 70B (Free)',
+        'google/gemma-4-31b-it:free': 'Gemma 4 31B IT (Free)',
+        'qwen/qwen-2.5-coder-32b-instruct:free': 'Qwen 2.5 Coder (Free)',
+        'qwen/qwen-2.5-72b:free': 'Qwen 2.5 72B (Free)',
+        'nvidia/nemotron-3-super-120b-a12b:free': 'NVIDIA Nemotron 3 (Free)',
+        'xiaomi/mimo-v2-flash:free': 'Xiaomi MiMo V2 (Free)',
+        'qwen/qwen3.6-plus-preview:free': 'Qwen 3.6 Plus (Free)',
+        'mistral/mistral-large:free': 'Mistral Large (Free)',
         // PPL (GLM)
         'glm-5.2': 'GLM 5.2',
         'glm-4': 'GLM-4',
-        'glm-4-flash': 'GLM-4 Flash'
+        'glm-4-flash': 'GLM-4 Flash',
+        'glm-4v-plus': 'GLM-4V Plus',
+        'glm-4-air': 'GLM-4 Air'
     };
     
     // ---------- DOM REFS ----------
@@ -239,12 +240,12 @@
     // ---------- MEMORY ----------
     let memoryStore = [];
     try {
-        const stored = localStorage.getItem('neuron_agi_memory_v6');
+        const stored = localStorage.getItem('neuron_agi_memory_v7');
         if (stored) memoryStore = JSON.parse(stored);
         if (!Array.isArray(memoryStore)) memoryStore = [];
     } catch(e) { memoryStore = []; }
     
-    // ---------- LOAD MODELS (API অনুযায়ী) ----------
+    // ---------- LOAD MODELS ----------
     function loadModelsForAPI(api) {
         const provider = API_PROVIDERS[api];
         if (!provider) return;
@@ -256,7 +257,7 @@
             const displayName = MODEL_LIST[modelId] || modelId;
             let providerName = api.toUpperCase();
             if (api === 'ppg') providerName = 'Google';
-            else if (api === 'ppo') providerName = 'OpenRouter';
+            else if (api === 'ppo') providerName = 'OpenRouter (Free)';
             else if (api === 'ppl') providerName = 'GLM';
             
             if (!groups[providerName]) groups[providerName] = [];
@@ -267,14 +268,14 @@
             provider.fallbackModels.forEach(modelId => {
                 if (!provider.models.includes(modelId)) {
                     const displayName = MODEL_LIST[modelId] || modelId;
-                    const providerName = 'Fallback';
+                    const providerName = 'Auto-Fallback';
                     if (!groups[providerName]) groups[providerName] = [];
-                    groups[providerName].push({id: modelId, name: displayName + ' (F)'});
+                    groups[providerName].push({id: modelId, name: displayName + ' ✓'});
                 }
             });
         }
         
-        const order = ['Google', 'OpenRouter', 'GLM', 'Fallback'];
+        const order = ['Google', 'OpenRouter (Free)', 'GLM', 'Auto-Fallback'];
         order.forEach(p => {
             if (groups[p] && groups[p].length) {
                 const og = document.createElement('optgroup');
@@ -335,7 +336,7 @@
     // ---------- MEMORY COUNTER ----------
     function updateMemCounter() {
         memCount.textContent = memoryStore.length;
-        try { localStorage.setItem('neuron_agi_memory_v6', JSON.stringify(memoryStore)); } catch(e) {}
+        try { localStorage.setItem('neuron_agi_memory_v7', JSON.stringify(memoryStore)); } catch(e) {}
     }
     updateMemCounter();
     
@@ -437,7 +438,7 @@
         chat.appendChild(typing);
         chat.scrollTop = chat.scrollHeight;
         if (typingTimeout) clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => hideTyping(), 30000);
+        typingTimeout = setTimeout(() => hideTyping(), 45000);
     }
     function hideTyping() {
         if (typingTimeout) { clearTimeout(typingTimeout); typingTimeout = null; }
@@ -499,7 +500,7 @@
         return context;
     }
     
-    // ---------- CALL API (API নির্বাচন অনুযায়ী) ----------
+    // ---------- CALL API (অটো-ফলব্যাক সহ) ----------
     async function callAPI(messages, model, stream = false) {
         const provider = API_PROVIDERS[currentAPI];
         if (!provider) throw new Error('Invalid API provider');
@@ -513,12 +514,15 @@
             const url = `${baseUrl}/${modelName}:generateContent?key=${apiKey}`;
             const promptText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
             
+            // 2000 tokens-এ limit (402 error এড়াতে)
+            const trimmedPrompt = promptText.length > 4000 ? promptText.slice(0, 4000) : promptText;
+            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+                    contents: [{ parts: [{ text: trimmedPrompt }] }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
                 })
             });
             
@@ -532,8 +536,8 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: promptText }] }],
-                                generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+                                contents: [{ parts: [{ text: trimmedPrompt }] }],
+                                generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
                             })
                         });
                         if (fbResp.ok) {
@@ -543,7 +547,7 @@
                         }
                     } catch(e) {}
                 }
-                throw new Error(`Gemini error: ${response.status} - ${errText}`);
+                throw new Error(`Gemini error: ${response.status}`);
             }
             
             const data = await response.json();
@@ -551,7 +555,15 @@
             return { message: { content: text } };
             
         } else if (currentAPI === 'ppo') {
-            // OpenRouter API
+            // OpenRouter API - শুধু ফ্রি মডেল
+            const modelId = model || 'deepseek/deepseek-r1:free';
+            
+            // 500 tokens limit (402 error এড়াতে)
+            const trimmedMessages = messages.map(m => ({
+                role: m.role,
+                content: m.content.length > 3000 ? m.content.slice(0, 3000) : m.content
+            }));
+            
             const response = await fetch(baseUrl, {
                 method: 'POST',
                 headers: {
@@ -561,18 +573,19 @@
                     'X-Title': 'Neuron AGI'
                 },
                 body: JSON.stringify({
-                    model: model || 'gpt-4o',
-                    messages: messages,
+                    model: modelId,
+                    messages: trimmedMessages,
                     stream: stream,
                     temperature: 0.7,
-                    max_tokens: 2000
+                    max_tokens: 500
                 })
             });
             
             if (!response.ok) {
                 const errText = await response.text();
+                // Fallback মডেল try
                 for (const fallback of provider.fallbackModels) {
-                    if (fallback === model) continue;
+                    if (fallback === modelId) continue;
                     try {
                         const fbResp = await fetch(baseUrl, {
                             method: 'POST',
@@ -584,10 +597,10 @@
                             },
                             body: JSON.stringify({
                                 model: fallback,
-                                messages: messages,
+                                messages: trimmedMessages,
                                 stream: stream,
                                 temperature: 0.7,
-                                max_tokens: 2000
+                                max_tokens: 500
                             })
                         });
                         if (fbResp.ok) {
@@ -596,14 +609,21 @@
                         }
                     } catch(e) {}
                 }
-                throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
+                throw new Error(`OpenRouter error: ${response.status}`);
             }
             
             if (stream) return response.body;
             return await response.json();
             
         } else if (currentAPI === 'ppl') {
-            // GLM API
+            // GLM API - সব মডেল
+            const modelId = model || 'glm-4';
+            
+            const trimmedMessages = messages.map(m => ({
+                role: m.role,
+                content: m.content.length > 3000 ? m.content.slice(0, 3000) : m.content
+            }));
+            
             const response = await fetch(baseUrl, {
                 method: 'POST',
                 headers: {
@@ -611,18 +631,18 @@
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
-                    model: model || 'glm-4',
-                    messages: messages,
+                    model: modelId,
+                    messages: trimmedMessages,
                     stream: stream,
                     temperature: 0.7,
-                    max_tokens: 2000
+                    max_tokens: 500
                 })
             });
             
             if (!response.ok) {
                 const errText = await response.text();
                 for (const fallback of provider.fallbackModels) {
-                    if (fallback === model) continue;
+                    if (fallback === modelId) continue;
                     try {
                         const fbResp = await fetch(baseUrl, {
                             method: 'POST',
@@ -632,10 +652,10 @@
                             },
                             body: JSON.stringify({
                                 model: fallback,
-                                messages: messages,
+                                messages: trimmedMessages,
                                 stream: stream,
                                 temperature: 0.7,
-                                max_tokens: 2000
+                                max_tokens: 500
                             })
                         });
                         if (fbResp.ok) {
@@ -644,7 +664,7 @@
                         }
                     } catch(e) {}
                 }
-                throw new Error(`GLM error: ${response.status} - ${errText}`);
+                throw new Error(`GLM error: ${response.status}`);
             }
             
             if (stream) return response.body;
@@ -722,15 +742,15 @@
         if (!fileInput.files.length) fileName.textContent = 'কোন ফাইল নেই';
         
         let agiContext = '';
-        let systemPrompt = 'You are a helpful AI assistant. Provide clear, structured responses. Use markdown for formatting.';
+        let systemPrompt = 'You are a helpful AI assistant. Provide clear, structured responses. Use markdown for formatting. Keep responses concise.';
         if (currentMode === 'advance') {
             agiContext = buildAdvanceContext(userText, fileObj);
             systemPrompt = `You are Neuron AGI with advanced memory & reasoning. Context: ${agiContext}. 
             Provide structured, layered answers. For code, give step-by-step plans with architecture layers.
-            Use markdown for formatting.`;
+            Use markdown for formatting. Keep responses concise.`;
         }
         
-        const recentMem = memoryStore.slice(-8).map(m => `${m.role}: ${(m.content||'').substring(0,250)}`).join('\n');
+        const recentMem = memoryStore.slice(-6).map(m => `${m.role}: ${(m.content||'').substring(0,200)}`).join('\n');
         const fullPrompt = `[মেমরি]\n${recentMem}\n\n${currentMode === 'advance' ? '[AGI প্ল্যান] '+agiContext : ''}\n\nব্যবহারকারী: ${userText}\n\nউত্তর:`;
         
         const messages = [
@@ -808,26 +828,23 @@
             hideTyping();
             console.error('Error:', err);
             
+            // Fallback: try another model
             try {
-                const fallbackResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${OPENROUTER_KEY}`,
-                        'HTTP-Referer': window.location.origin || 'https://neuron-agi.app',
-                        'X-Title': 'Neuron AGI'
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o',
-                        messages: messages,
-                        stream: false,
-                        temperature: 0.7
-                    })
-                });
-                if (fallbackResp.ok) {
-                    const data = await fallbackResp.json();
-                    const reply = data?.choices?.[0]?.message?.content || 'Error: No response';
-                    appendMessage('agi', reply, model);
+                const fallbackModels = ['deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'glm-4'];
+                let fallbackReply = null;
+                for (const fbModel of fallbackModels) {
+                    if (fbModel === model) continue;
+                    try {
+                        const fbResp = await callAPI(messages, fbModel, false);
+                        const reply = fbResp?.message?.content || fbResp?.choices?.[0]?.message?.content;
+                        if (reply) {
+                            fallbackReply = reply;
+                            break;
+                        }
+                    } catch(e) {}
+                }
+                if (fallbackReply) {
+                    appendMessage('agi', fallbackReply, 'auto-fallback');
                 } else {
                     appendMessage('agi', `⚠️ ত্রুটি: ${err.message || 'API সংযোগ সমস্যা'}`, model);
                 }
@@ -881,7 +898,7 @@
     });
     
     updateMemCounter();
-    console.log('✅ Neuron AGI - Updated models: Gemini 3.5/3.6 Flash, GLM 5.2, OpenRouter free models');
+    console.log('✅ Neuron AGI - Free models only, auto-fallback, no Claude/GPT paid models');
 })();
 </script>
 </body>
