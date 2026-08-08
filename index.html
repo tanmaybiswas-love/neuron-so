@@ -1,28 +1,29 @@
-<!DOCTYPE html>
+
+html_content = r'''<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Chat — Puter.js</title>
+    <title>Puter AI Chat — Universal Models</title>
     <style>
         :root {
-            --bg: #0d0d0d;
-            --surface: #1a1a1a;
-            --surface-hover: #252525;
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface-2: #1c1c1c;
             --border: #2a2a2a;
             --text: #e8e8e8;
             --text-secondary: #a0a0a0;
             --text-tertiary: #666;
             --accent: #d4a574;
             --accent-soft: rgba(212, 165, 116, 0.12);
-            --user-bg: #2d2d2d;
-            --bot-bg: #1a1a1a;
+            --user-bg: #2a2a2a;
+            --bot-bg: #141414;
             --radius: 14px;
             --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
             --danger: #ef4444;
-            --warning: #facc15;
-            --success: #4ade80;
+            --warning: #f59e0b;
+            --success: #22c55e;
+            --info: #3b82f6;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -40,64 +41,72 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--border);
             background: var(--surface);
             flex-shrink: 0;
+            gap: 10px;
         }
-        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .logo {
             width: 34px; height: 34px;
-            background: linear-gradient(135deg, #d4a574, #b8895e);
+            background: linear-gradient(135deg, var(--accent), #b8895e);
             border-radius: var(--radius-sm);
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            font-size: 16px; flex-shrink: 0;
         }
-        .header-title { font-size: 15px; font-weight: 600; }
-        .header-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+        .header-title { font-size: 15px; font-weight: 600; white-space: nowrap; }
+        .header-sub { font-size: 11px; color: var(--text-tertiary); }
 
+        .header-right { display: flex; align-items: center; gap: 8px; }
         .model-select {
-            padding: 5px 10px;
-            border-radius: 18px;
+            padding: 6px 10px;
+            border-radius: 8px;
             border: 1px solid var(--border);
             background: var(--bg);
             color: var(--text);
             font-size: 12px;
-            cursor: pointer;
             outline: none;
+            cursor: pointer;
+            max-width: 160px;
         }
+        .model-select:focus { border-color: var(--accent); }
+        .settings-btn {
+            width: 34px; height: 34px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
+            font-size: 16px;
+        }
+        .settings-btn:active { background: var(--surface-2); }
+        .key-badge {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 4px rgba(34,197,94,0.5);
+            display: none;
+        }
+        .key-badge.active { display: block; }
 
-        .status {
-            display: flex; align-items: center; gap: 5px;
-            font-size: 11px; color: var(--text-tertiary);
+        /* Status Bar */
+        .status-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-tertiary);
         }
         .status-dot {
             width: 6px; height: 6px; border-radius: 50%;
             background: var(--text-tertiary);
-            transition: background 0.3s;
         }
-        .status-dot.ready { background: var(--success); box-shadow: 0 0 5px rgba(74,222,128,0.4); }
+        .status-dot.ready { background: var(--success); box-shadow: 0 0 5px rgba(34,197,94,0.4); }
         .status-dot.loading { background: var(--warning); animation: pulse 1.2s infinite; }
         .status-dot.error { background: var(--danger); }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-        /* Debug Panel */
-        .debug-panel {
-            background: #111;
-            border-bottom: 1px solid var(--border);
-            padding: 8px 16px;
-            font-size: 11px;
-            font-family: "SF Mono", "Fira Code", monospace;
-            color: var(--text-tertiary);
-            max-height: 80px;
-            overflow-y: auto;
-            display: none;
-        }
-        .debug-panel.show { display: block; }
-        .debug-line { margin: 2px 0; }
-        .debug-line.error { color: var(--danger); }
-        .debug-line.warn { color: var(--warning); }
-        .debug-line.info { color: var(--success); }
 
         /* Chat */
         .chat-container {
@@ -139,224 +148,199 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
-        .bubble.user {
-            background: var(--user-bg);
-            border-bottom-right-radius: 4px;
-        }
-        .bubble.bot {
-            background: var(--bot-bg);
-            border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
-        }
-        .bubble code {
-            background: #2a2a2a;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-family: "SF Mono", "Fira Code", monospace;
-            font-size: 12px;
-        }
-        .bubble pre {
-            background: #151515;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            overflow-x: auto;
-            margin: 8px 0;
-        }
+        .bubble.user { background: var(--user-bg); border-bottom-right-radius: 4px; }
+        .bubble.bot { background: var(--bot-bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+        .bubble code { background: #2a2a2a; padding: 2px 5px; border-radius: 4px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; }
+        .bubble pre { background: #0f0f0f; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; overflow-x: auto; margin: 8px 0; }
         .bubble pre code { background: transparent; padding: 0; font-size: 12px; }
         .bubble strong { color: var(--accent); }
 
         /* Typing */
         .typing {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: var(--bot-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            border-bottom-left-radius: 4px;
-            width: fit-content;
-            margin-left: 40px;
+            display: none; align-items: center; gap: 8px;
+            padding: 10px 14px; background: var(--bot-bg);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            border-bottom-left-radius: 4px; width: fit-content; margin-left: 40px;
         }
         .typing.active { display: flex; }
         .typing-dots { display: flex; gap: 3px; }
-        .typing-dots span {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--text-tertiary);
-            animation: bounce 1.3s infinite ease-in-out both;
-        }
+        .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); animation: bounce 1.3s infinite ease-in-out both; }
         .typing-dots span:nth-child(1) { animation-delay: -0.3s; }
         .typing-dots span:nth-child(2) { animation-delay: -0.15s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; }
-            40% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes bounce { 0%,80%,100%{transform:scale(0.5);opacity:0.3} 40%{transform:scale(1);opacity:1} }
 
         /* Input */
         .input-area {
-            padding: 12px 16px 16px;
+            padding: 12px 14px 16px;
             border-top: 1px solid var(--border);
             background: var(--surface);
             flex-shrink: 0;
         }
         .input-box {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 8px 12px;
+            display: flex; gap: 8px; align-items: flex-end;
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 8px 12px;
         }
         .input-box:focus-within { border-color: var(--accent); }
         .input-box textarea {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text);
-            font-size: 14px;
-            line-height: 1.5;
-            resize: none;
-            outline: none;
-            max-height: 100px;
-            font-family: inherit;
-            padding: 4px 0;
+            flex: 1; background: transparent; border: none;
+            color: var(--text); font-size: 14px; line-height: 1.5;
+            resize: none; outline: none; max-height: 100px;
+            font-family: inherit; padding: 4px 0;
         }
         .input-box textarea::placeholder { color: var(--text-tertiary); }
         .send-btn {
-            width: 34px; height: 34px;
-            border-radius: var(--radius-sm);
-            background: var(--accent);
-            border: none;
-            color: #1a1a1a;
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            background: var(--accent); border: none; color: #1a1a1a;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            touch-action: manipulation;
+            cursor: pointer; flex-shrink: 0;
         }
         .send-btn:active { transform: scale(0.92); }
         .send-btn:disabled { opacity: 0.35; }
 
         /* Empty State */
         .empty-state {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            color: var(--text-tertiary);
-            text-align: center;
-            padding: 30px;
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 14px; color: var(--text-tertiary);
+            text-align: center; padding: 30px;
         }
         .empty-state .logo-big {
-            width: 56px; height: 56px;
-            background: var(--accent-soft);
-            border-radius: var(--radius);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            border: 1px solid rgba(212,165,116,0.15);
+            width: 56px; height: 56px; background: var(--accent-soft);
+            border-radius: var(--radius); display: flex;
+            align-items: center; justify-content: center;
+            font-size: 28px; border: 1px solid rgba(212,165,116,0.15);
         }
         .empty-state h3 { color: var(--text); font-size: 17px; font-weight: 500; }
         .empty-state p { font-size: 13px; max-width: 300px; line-height: 1.6; }
-        .suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-            margin-top: 6px;
-        }
+        .suggestions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
         .suggestion-chip {
-            padding: 7px 12px;
-            border-radius: 18px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
+            padding: 7px 12px; border-radius: 18px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text-secondary); font-size: 12px; cursor: pointer;
         }
         .suggestion-chip:active { background: var(--accent-soft); border-color: var(--accent); }
 
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            display: none; align-items: center; justify-content: center;
+            z-index: 200; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 480px;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-close {
+            width: 32px; height: 32px; border-radius: 8px;
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-secondary); display: flex;
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+        .modal-body { padding: 16px 20px; }
+        .setting-group { margin-bottom: 16px; }
+        .setting-label {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 500; margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        .setting-input {
+            width: 100%; padding: 10px 12px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+            background: var(--bg); color: var(--text); font-size: 13px;
+            outline: none; font-family: "SF Mono", "Fira Code", monospace;
+        }
+        .setting-input:focus { border-color: var(--accent); }
+        .setting-hint {
+            font-size: 11px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.5;
+        }
+        .setting-hint a { color: var(--accent); text-decoration: none; }
+        .save-btn {
+            width: 100%; padding: 12px;
+            border-radius: var(--radius-sm); border: none;
+            background: var(--accent); color: #1a1a1a;
+            font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px;
+        }
+        .save-btn:active { opacity: 0.85; }
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-label { font-size: 13px; }
+        .toggle-desc { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+        .toggle-switch {
+            width: 44px; height: 24px; border-radius: 12px;
+            background: var(--border); position: relative; cursor: pointer;
+            transition: background 0.2s; flex-shrink: 0;
+        }
+        .toggle-switch.active { background: var(--success); }
+        .toggle-switch::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border-radius: 50%; background: white; top: 2px; left: 2px;
+            transition: transform 0.2s;
+        }
+        .toggle-switch.active::after { transform: translateX(20px); }
+
         /* Toast */
         .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
+            position: fixed; bottom: 80px; left: 50%;
             transform: translateX(-50%) translateY(30px);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 10px 18px;
-            border-radius: var(--radius-sm);
-            font-size: 12px;
-            color: var(--text-secondary);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s ease;
-            z-index: 100;
-            box-shadow: var(--shadow);
-            max-width: 90vw;
-            text-align: center;
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 10px 18px; border-radius: var(--radius-sm);
+            font-size: 12px; color: var(--text-secondary);
+            opacity: 0; pointer-events: none; transition: all 0.3s ease;
+            z-index: 100; box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            max-width: 90vw; text-align: center;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Connection test btn */
-        .test-btn {
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-tertiary);
-            font-size: 11px;
-            cursor: pointer;
-            margin-left: 8px;
+        .new-chat-btn {
+            padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-tertiary); font-size: 11px;
+            cursor: pointer; white-space: nowrap; margin-left: auto;
         }
-        .test-btn:active { background: var(--surface-hover); }
+        .new-chat-btn:active { background: var(--surface-2); }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-left">
             <div class="logo">🤖</div>
-            <div>
-                <div class="header-title">AI Chat</div>
-                <div class="header-sub">Puter.js — No API key</div>
+            <div style="min-width:0;">
+                <div class="header-title">Puter AI Chat</div>
+                <div class="header-sub">500+ Models · One Key</div>
             </div>
         </div>
-        <div style="display: flex; align-items: center;">
-            <select class="model-select" id="modelSelect">
-                <option value="claude-sonnet-5">Claude Sonnet 5</option>
-                <option value="claude-opus-5">Claude Opus 5</option>
-                <option value="claude-fable-5">Claude Fable 5</option>
-                <option value="qwen3.8-max">Qwen3.8 Max</option>
-                <option value="qwen3-coder-plus">Qwen3 Coder Plus</option>
-                <option value="gpt-5.6-luna">GPT-5.6 Luna</option>
-                <option value="gpt-oss-120b">GPT-OSS 120B</option>
-                <option value="gemini-3-flash">Gemini 3 Flash</option>
-            </select>
-            <button class="test-btn" id="testBtn">Test</button>
+        <div class="header-right">
+            <div class="key-badge" id="keyBadge"></div>
+            <select class="model-select" id="modelSelect"></select>
+            <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
         </div>
     </div>
 
-    <div class="status" style="padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--border);">
+    <div class="status-bar">
         <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Loading...</span>
-    </div>
-
-    <div class="debug-panel" id="debugPanel">
-        <div class="debug-line">Debug console ready...</div>
+        <span id="statusText">Checking Puter...</span>
+        <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
     </div>
 
     <div class="chat-container" id="chatContainer">
         <div class="empty-state" id="emptyState">
-            <div class="logo-big">💬</div>
-            <h3>AI Chat শুরু করুন</h3>
-            <p>Claude, Qwen, GPT এবং আরও ৫০০+ মডেলের সাথে কথা বলুন। কোনো API key লাগে না!</p>
+            <div class="logo-big">🔑</div>
+            <h3>Puter AI Chat</h3>
+            <p>আপনার <strong>Puter Auth Token</strong> দিয়ে ৫০০+ AI মডেল ব্যবহার করুন। Token ছাড়াও কিছু message ফ্রি!</p>
             <div class="suggestions">
-                <button class="suggestion-chip" onclick="setInput('বাংলায় একটি ছোট গল্প লিখো')">✍️ গল্প</button>
-                <button class="suggestion-chip" onclick="setInput('JavaScript To-Do app code দাও')">💻 Code</button>
+                <button class="suggestion-chip" onclick="setInput('বাংলায় একটি গল্প লিখো')">✍️ গল্প</button>
+                <button class="suggestion-chip" onclick="setInput('JavaScript code দাও')">💻 Code</button>
                 <button class="suggestion-chip" onclick="setInput('বাংলাদেশের ইতিহাস বলো')">📚 ইতিহাস</button>
-                <button class="suggestion-chip" onclick="setInput('আজকের আবহাওয়া কেমন?')">🌤️ আবহাওয়া</button>
+                <button class="suggestion-chip" onclick="setInput('আজকের আবহাওয়া?')">🌤️ আবহাওয়া</button>
             </div>
         </div>
     </div>
@@ -377,24 +361,100 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔐 Puter Settings</h3>
+                <button class="modal-close" id="modalClose">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <div class="setting-label">Puter Auth Token</div>
+                    <input type="password" class="setting-input" id="puterToken" placeholder="puter_auth_... অথবা token paste করুন">
+                    <div class="setting-hint">
+                        <a href="https://puter.com/dashboard#account" target="_blank">puter.com/dashboard</a> এ গিয়ে <strong>"Create token"</strong> ক্লিক করুন।<br>
+                        Token দিলে <strong>আপনার নিজের account-এর credits</strong> ব্যবহার হবে — অনেক বেশি limit!
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">🚀 Use My Token (More Credits)</div>
+                        <div class="toggle-desc">Token দিয়ে API call করবে — বেশি usage</div>
+                    </div>
+                    <div class="toggle-switch" id="useTokenToggle"></div>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">🔄 Auto-rotate Temp Accounts</div>
+                        <div class="toggle-desc">Token না থাকলে auto temp account তৈরি</div>
+                    </div>
+                    <div class="toggle-switch active" id="autoRotateToggle"></div>
+                </div>
+
+                <button class="save-btn" id="saveBtn">💾 Save & Connect</button>
+
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;font-weight:500;">📋 Popular Models on Puter</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);line-height:1.8;">
+                        Claude Sonnet 5 · Claude Opus 5 · GPT-5.6 Luna · GPT-5.5 Sol<br>
+                        Qwen3.8 Max · Qwen3 Coder · DeepSeek V4 · DeepSeek R1<br>
+                        Gemini 3 Flash · Llama 3.3 70B · Kimi K3 · Mistral Large 3
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script src="https://js.puter.com/v2/"></script>
     <script>
-        // ===== Debug Logger =====
-        const debugPanel = document.getElementById('debugPanel');
-        const debugLines = [];
-        function log(msg, type) {
-            const line = document.createElement('div');
-            line.className = 'debug-line ' + (type || 'info');
-            line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-            debugPanel.appendChild(line);
-            debugPanel.classList.add('show');
-            debugPanel.scrollTop = debugPanel.scrollHeight;
-            console.log('[AI Chat]', msg);
-        }
+        // ========================
+        // MODELS
+        // ========================
+        const MODELS = [
+            { id: 'claude-sonnet-5', name: '🟣 Claude Sonnet 5' },
+            { id: 'claude-opus-5', name: '🔴 Claude Opus 5' },
+            { id: 'claude-fable-5', name: '🟠 Claude Fable 5' },
+            { id: 'claude-haiku-4-5', name: '⚪ Claude Haiku 4.5' },
+            { id: 'gpt-5-6-luna', name: '🟢 GPT-5.6 Luna' },
+            { id: 'gpt-5-5-sol', name: '🔵 GPT-5.5 Sol' },
+            { id: 'gpt-4o', name: '⚫ GPT-4o' },
+            { id: 'gpt-4o-mini', name: '⚪ GPT-4o Mini' },
+            { id: 'o3-mini', name: '🧠 o3-mini' },
+            { id: 'qwen3-8-max', name: '🔷 Qwen3.8 Max' },
+            { id: 'qwen3-coder-plus', name: '💻 Qwen3 Coder Plus' },
+            { id: 'qwen3-80b-a3b', name: '🔹 Qwen3 80B A3B' },
+            { id: 'deepseek-v4-pro', name: '🌊 DeepSeek V4 Pro' },
+            { id: 'deepseek-v4-flash', name: '💨 DeepSeek V4 Flash' },
+            { id: 'deepseek-r1', name: '🧩 DeepSeek R1' },
+            { id: 'gemini-3-flash', name: '🟡 Gemini 3 Flash' },
+            { id: 'gemini-2-5-pro', name: '🟠 Gemini 2.5 Pro' },
+            { id: 'llama-3-3-70b', name: '🦙 Llama 3.3 70B' },
+            { id: 'llama-4-scout', name: '🦙 Llama 4 Scout' },
+            { id: 'kimi-k3', name: '🌙 Kimi K3' },
+            { id: 'mistral-large-3', name: '🌫️ Mistral Large 3' },
+            { id: 'codestral-2501', name: '📝 Codestral' },
+            { id: 'grok-3', name: '🤯 Grok 3' },
+            { id: 'grok-3-mini', name: '🤯 Grok 3 Mini' },
+        ];
 
-        // ===== Elements =====
+        // ========================
+        // STATE
+        // ========================
+        let messages = [];
+        let isLoading = false;
+        let currentModel = MODELS[0].id;
+        let puterReady = false;
+        let tempAuthToken = null;
+        let tempUserCreated = false;
+
+        // ========================
+        // DOM
+        // ========================
         const chatContainer = document.getElementById('chatContainer');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -404,80 +464,127 @@
         const typingIndicator = document.getElementById('typingIndicator');
         const emptyState = document.getElementById('emptyState');
         const toast = document.getElementById('toast');
-        const testBtn = document.getElementById('testBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const modalClose = document.getElementById('modalClose');
+        const saveBtn = document.getElementById('saveBtn');
+        const puterTokenInput = document.getElementById('puterToken');
+        const useTokenToggle = document.getElementById('useTokenToggle');
+        const autoRotateToggle = document.getElementById('autoRotateToggle');
+        const keyBadge = document.getElementById('keyBadge');
+        const newChatBtn = document.getElementById('newChatBtn');
 
-        let messages = [];
-        let isLoading = false;
-        let puterReady = false;
-
-        // ===== Status =====
+        // ========================
+        // HELPERS
+        // ========================
         function setStatus(state, text) {
             statusDot.className = 'status-dot ' + state;
             statusText.textContent = text;
-            log('Status: ' + text, state === 'error' ? 'error' : 'info');
         }
-
-        // ===== Toast =====
         function showToast(msg) {
             toast.textContent = msg;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 4000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
-
-        // ===== Input =====
         function setInput(text) {
             messageInput.value = text;
             messageInput.focus();
             autoResize();
         }
-
         function autoResize() {
             messageInput.style.height = 'auto';
             messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
         }
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 
         messageInput.addEventListener('input', autoResize);
-        messageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+        messageInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
+        sendBtn.addEventListener('click', sendMessage);
+        sendBtn.addEventListener('touchend', e => { e.preventDefault(); sendMessage(); });
 
-        // ===== Send Button (click + touch) =====
-        function handleSend(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            sendMessage();
+        // ========================
+        // MODEL SELECTOR
+        // ========================
+        function populateModels() {
+            modelSelect.innerHTML = '';
+            MODELS.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                modelSelect.appendChild(opt);
+            });
+            currentModel = MODELS[0].id;
         }
-        sendBtn.addEventListener('click', handleSend);
-        sendBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            handleSend(e);
+        modelSelect.addEventListener('change', () => { currentModel = modelSelect.value; });
+
+        // ========================
+        // SETTINGS
+        // ========================
+        function getToken() {
+            return localStorage.getItem('puter_auth_token') || '';
+        }
+        function useTokenEnabled() {
+            return localStorage.getItem('puter_use_token') === 'true' && !!getToken();
+        }
+        function autoRotateEnabled() {
+            return localStorage.getItem('puter_auto_rotate') !== 'false';
+        }
+
+        function updateUI() {
+            const hasToken = !!getToken();
+            const useToken = useTokenEnabled();
+            puterTokenInput.value = getToken();
+            useTokenToggle.classList.toggle('active', useToken);
+            autoRotateToggle.classList.toggle('active', autoRotateEnabled());
+            keyBadge.classList.toggle('active', useToken);
+
+            if (useToken) {
+                setStatus('ready', 'Puter Token Connected');
+            } else if (puterReady) {
+                setStatus('ready', 'Puter.js Ready (Limited)');
+            }
+        }
+
+        settingsBtn.addEventListener('click', () => {
+            updateUI();
+            settingsModal.classList.add('active');
+        });
+        modalClose.addEventListener('click', () => settingsModal.classList.remove('active'));
+        settingsModal.addEventListener('click', e => {
+            if (e.target === settingsModal) settingsModal.classList.remove('active');
+        });
+        useTokenToggle.addEventListener('click', () => {
+            useTokenToggle.classList.toggle('active');
+        });
+        autoRotateToggle.addEventListener('click', () => {
+            autoRotateToggle.classList.toggle('active');
+        });
+        saveBtn.addEventListener('click', () => {
+            const token = puterTokenInput.value.trim();
+            if (token) localStorage.setItem('puter_auth_token', token);
+            else localStorage.removeItem('puter_auth_token');
+            localStorage.setItem('puter_use_token', useTokenToggle.classList.contains('active'));
+            localStorage.setItem('puter_auto_rotate', autoRotateToggle.classList.contains('active'));
+            updateUI();
+            settingsModal.classList.remove('active');
+            showToast(token ? '✅ Token saved! More credits active.' : '💾 Settings saved');
         });
 
-        // ===== Test Connection =====
-        testBtn.addEventListener('click', async function() {
-            log('Testing Puter.js connection...', 'warn');
-            if (typeof puter === 'undefined') {
-                setStatus('error', 'Puter.js not loaded');
-                showToast('Puter.js লোড হয়নি!');
-                return;
-            }
-            try {
-                log('puter object found: ' + typeof puter, 'info');
-                log('puter.ai: ' + typeof puter.ai, 'info');
-                log('puter.ai.chat: ' + typeof puter.ai.chat, 'info');
-                showToast('Puter.js loaded! ai.chat: ' + typeof puter.ai.chat);
-                puterReady = true;
-                setStatus('ready', 'Ready');
-            } catch (err) {
-                log('Test error: ' + err.message, 'error');
-                setStatus('error', 'Test failed');
-            }
+        newChatBtn.addEventListener('click', () => {
+            messages = [];
+            chatContainer.innerHTML = '';
+            chatContainer.appendChild(emptyState);
+            emptyState.style.display = 'flex';
+            showToast('🆕 New chat started');
         });
 
-        // ===== Create Message =====
+        // ========================
+        // MESSAGE RENDERING
+        // ========================
         function createMessage(role, content) {
             const div = document.createElement('div');
             div.className = 'message ' + role;
@@ -491,13 +598,8 @@
             div.appendChild(bubble);
             return { div, bubble };
         }
-
-        // ===== Format Content =====
         function formatContent(text) {
-            let html = text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             html = html.replace(/```([\w]*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
             html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -506,18 +608,78 @@
             return html;
         }
 
-        // ===== Send Message =====
+        // ========================
+        // STREAM PARSER
+        // ========================
+        async function* parseStream(reader) {
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === 'data: [DONE]') continue;
+                    if (trimmed.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(trimmed.slice(6));
+                            const content = data.choices?.[0]?.delta?.content || data.choices?.[0]?.text || '';
+                            if (content) yield content;
+                        } catch (e) {}
+                    }
+                }
+            }
+        }
+
+        // ========================
+        // TEMP ACCOUNT ROTATION
+        // ========================
+        async function createTempAccount() {
+            try {
+                const resp = await fetch('https://api.puter.com/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_temp: true })
+                });
+                const data = await resp.json();
+                if (data.token) {
+                    tempAuthToken = data.token;
+                    tempUserCreated = true;
+                    return data.token;
+                }
+            } catch (e) {
+                console.error('Temp account failed:', e);
+            }
+            return null;
+        }
+
+        async function getAppToken(authToken) {
+            try {
+                const resp = await fetch('https://api.puter.com/auth/get-user-app-token', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ origin: location.origin })
+                });
+                const data = await resp.json();
+                return data.token || null;
+            } catch (e) {
+                console.error('Get app token failed:', e);
+                return null;
+            }
+        }
+
+        // ========================
+        // SEND MESSAGE
+        // ========================
         async function sendMessage() {
             const text = messageInput.value.trim();
-            if (!text) { log('Empty message, ignoring', 'warn'); return; }
-            if (isLoading) { log('Already loading, ignoring', 'warn'); return; }
-            if (typeof puter === 'undefined') {
-                setStatus('error', 'Puter.js not loaded');
-                showToast('Puter.js লোড হয়নি! Page refresh করুন।');
-                return;
-            }
-
-            log('Sending: "' + text.substring(0, 30) + '..."', 'info');
+            if (!text || isLoading) return;
 
             if (emptyState) emptyState.style.display = 'none';
 
@@ -536,66 +698,134 @@
             scrollToBottom();
 
             try {
-                const model = modelSelect.value;
-                log('Model: ' + model, 'info');
+                let token = getToken();
+                let usingToken = useTokenEnabled() && token;
+                let appToken = null;
 
-                const resp = await puter.ai.chat(messages, { model: model, stream: true });
-                log('Response received, type: ' + typeof resp, 'info');
+                // METHOD 1: User's Puter Auth Token (most credits)
+                if (usingToken) {
+                    appToken = await getAppToken(token);
+                    if (!appToken) {
+                        showToast('⚠️ Token invalid! Fallback to default...');
+                        usingToken = false;
+                    }
+                }
 
-                typingIndicator.classList.remove('active');
-                const botMsg = createMessage('bot', '');
-                chatContainer.appendChild(botMsg.div);
+                // METHOD 2: Auto-rotate temp accounts (more free credits)
+                if (!usingToken && autoRotateEnabled()) {
+                    if (!tempAuthToken) {
+                        setStatus('loading', 'Creating temp account...');
+                        await createTempAccount();
+                    }
+                    if (tempAuthToken) {
+                        appToken = await getAppToken(tempAuthToken);
+                    }
+                }
+
+                // METHOD 3: Default Puter.js (limited)
+                let useDefaultPuter = false;
+                if (!appToken) {
+                    if (typeof puter !== 'undefined' && puter.ai && puter.ai.chat) {
+                        useDefaultPuter = true;
+                    } else {
+                        throw new Error('No auth method available. Add a Puter token in settings.');
+                    }
+                }
 
                 let fullText = '';
-                let chunkCount = 0;
 
-                if (resp && typeof resp[Symbol.asyncIterator] === 'function') {
-                    log('Streaming started...', 'info');
+                if (useDefaultPuter) {
+                    // Use Puter.js library directly
+                    const resp = await puter.ai.chat(messages, { model: currentModel, stream: true });
+                    typingIndicator.classList.remove('active');
+                    const botMsg = createMessage('bot', '');
+                    chatContainer.appendChild(botMsg.div);
+
                     for await (const part of resp) {
-                        chunkCount++;
                         if (part && part.text) {
                             fullText += part.text;
                             botMsg.bubble.innerHTML = formatContent(fullText);
                             scrollToBottom();
                         }
                     }
-                    log('Streaming done. Chunks: ' + chunkCount, 'info');
-                } else if (resp && resp.text) {
-                    log('Non-streaming response', 'info');
-                    fullText = resp.text;
-                    botMsg.bubble.innerHTML = formatContent(fullText);
                 } else {
-                    log('Unexpected response: ' + JSON.stringify(resp).substring(0, 200), 'error');
-                    fullText = 'অজানা response format পাওয়া গেছে।';
-                    botMsg.bubble.innerHTML = formatContent(fullText);
+                    // Use Puter API directly with token
+                    const requestBody = {
+                        interface: "puter-chat-completion",
+                        driver: "openai-completion",
+                        test_mode: false,
+                        method: "complete",
+                        args: {
+                            messages: messages,
+                            model: currentModel,
+                            stream: true
+                        }
+                    };
+
+                    const resp = await fetch('https://api.puter.com/drivers/call', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${appToken}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'text/event-stream'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        if (errData.error?.delegate === 'usage-limited-chat') {
+                            // Token exhausted, try rotating
+                            if (autoRotateEnabled() && !usingToken) {
+                                tempAuthToken = null;
+                                showToast('⏳ Credits exhausted. Creating new temp account...');
+                                throw new Error('ROTATE');
+                            }
+                            throw new Error('Usage limit reached! Add your Puter token for more credits.');
+                        }
+                        throw new Error(errData.message || `HTTP ${resp.status}`);
+                    }
+
+                    typingIndicator.classList.remove('active');
+                    const botMsg = createMessage('bot', '');
+                    chatContainer.appendChild(botMsg.div);
+
+                    const reader = resp.body.getReader();
+                    for await (const chunk of parseStream(reader)) {
+                        fullText += chunk;
+                        botMsg.bubble.innerHTML = formatContent(fullText);
+                        scrollToBottom();
+                    }
                 }
 
                 messages.push({ role: 'assistant', content: fullText });
-                setStatus('ready', 'Ready');
+                setStatus('ready', usingToken ? 'Puter Token ✓' : (tempUserCreated ? 'Temp Account ✓' : 'Puter.js ✓'));
 
             } catch (err) {
                 typingIndicator.classList.remove('active');
-                log('ERROR: ' + (err.message || err), 'error');
-                console.error(err);
 
-                let errorMsg = '❌ কিছু একটা সমস্যা হয়েছে।';
-                const msg = err.message || '';
-                if (msg.includes('insufficient_funds') || msg.includes('402')) {
-                    errorMsg = '⚠️ Free credits শেষ! Puter-এ login করুন।';
-                } else if (msg.includes('usage-limited') || msg.includes('rate')) {
-                    errorMsg = '⚠️ Rate limit! কিছুক্ষণ পর আবার চেষ্টা করুন।';
-                } else if (msg.includes('network') || msg.includes('fetch')) {
-                    errorMsg = '⚠️ Network error! Internet connection চেক করুন।';
-                } else if (msg.includes('login') || msg.includes('auth')) {
-                    errorMsg = '⚠️ Login required! Puter-এ account তৈরি করুন।';
-                } else if (msg) {
-                    errorMsg = '⚠️ Error: ' + msg.substring(0, 100);
+                if (err.message === 'ROTATE' && autoRotateEnabled()) {
+                    // Retry with new temp account
+                    isLoading = false;
+                    sendBtn.disabled = false;
+                    sendMessage();
+                    return;
+                }
+
+                console.error(err);
+                let errorMsg = '❌ Error: ' + (err.message || 'Unknown');
+                if (err.message?.includes('usage') || err.message?.includes('limit')) {
+                    errorMsg = '⚠️ Free credits finished!\n\n👉 Settings-এ গিয়ে আপনার Puter Auth Token যোগ করুন।\n👉 অথবা "Auto-rotate Temp Accounts" অন করুন।';
+                } else if (err.message?.includes('No auth')) {
+                    errorMsg = '🔑 No auth method!\n\nSettings → Puter Auth Token paste করুন।';
+                } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
+                    errorMsg = '📡 Network error! Internet connection চেক করুন।';
                 }
 
                 const errMsg = createMessage('bot', errorMsg);
                 chatContainer.appendChild(errMsg.div);
                 setStatus('error', 'Error');
-                showToast(errorMsg);
+                showToast(err.message?.substring(0, 50) || 'Error');
             } finally {
                 isLoading = false;
                 sendBtn.disabled = false;
@@ -604,31 +834,32 @@
             }
         }
 
-        function scrollToBottom() {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+        // ========================
+        // INIT
+        // ========================
+        populateModels();
+        updateUI();
+        messageInput.focus();
 
-        // ===== Init =====
-        log('Page loaded. Checking Puter.js...', 'info');
-
+        // Check Puter.js
         function checkPuter() {
             if (typeof puter !== 'undefined') {
-                log('Puter.js loaded successfully!', 'info');
-                log('puter.ai: ' + typeof puter.ai, 'info');
-                log('puter.ai.chat: ' + typeof puter.ai.chat, 'info');
                 puterReady = true;
-                setStatus('ready', 'Ready');
-                showToast('Puter.js ready! Chat শুরু করুন।');
+                if (!useTokenEnabled()) {
+                    setStatus('ready', 'Puter.js Ready (Limited)');
+                }
             } else {
-                log('Puter.js not loaded yet, retrying...', 'warn');
-                setStatus('loading', 'Loading Puter.js...');
-                setTimeout(checkPuter, 1000);
+                setTimeout(checkPuter, 500);
             }
         }
-
-        // Start checking after a short delay
-        setTimeout(checkPuter, 500);
-        messageInput.focus();
+        setTimeout(checkPuter, 300);
     </script>
 </body>
 </html>
+'''
+
+with open('/mnt/agents/output/puter_ai_chat.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("File saved successfully!")
+print(f"Size: {len(html_content)} characters")
